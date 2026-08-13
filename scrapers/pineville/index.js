@@ -97,7 +97,9 @@ async function fetchAndParse() {
       request_type: null, // often not actually a rezoning — could be a subdivision
       // proposal, road project, etc. Left null rather than mislabeling everything
       // "Rezoning" like the other towns' scrapers do.
+      current_zoning: null,
       zoning: null,
+      acreage: null, // not available on this bulletin page
       applicant: null,
       developer: null,
       owner: null,

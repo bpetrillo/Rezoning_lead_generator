@@ -129,6 +129,7 @@ async function fetchDetail(item) {
     // confirmed rezonings — other development project types (site plans, etc.) don't
     // get mislabeled
     zoning: fields['Zoning'] || null,
+    acreage: fields['Acreage'] || null,
     applicant: fields['Applicant'] || null,
     developer: null,
     owner: null,

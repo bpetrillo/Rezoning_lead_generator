@@ -141,7 +141,9 @@ async function fetchDetail(petitionId, url) {
     // scrapers/lib/classify.js header for confidence caveats on this specific mapping.
     project_type: classifyProjectType({ zoning, description, zoningSystem: 'udo' }),
     request_type: 'Rezoning',
+    current_zoning: h6Map['Current Zoning'] || null,
     zoning,
+    acreage: null, // not shown on this page — see file header
     applicant: h3Map['Petitioner'] || null,
     developer: null,
     owner: null,

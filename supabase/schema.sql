@@ -19,7 +19,9 @@ create table if not exists rezoning_projects (
   -- classification
   project_type text,                  -- Residential / Commercial / Industrial / Mixed Use / etc.
   request_type text,                  -- Rezone / Conditional Use Permit / Subdivision / etc.
+  current_zoning text,                -- existing zoning district, e.g. "INST(CD)" — available on Charlotte, Matthews, Mint Hill
   zoning text,                        -- requested zoning district, e.g. "B-P DO-B (CZD)"
+  acreage text,                       -- site size, e.g. "4.94" — available on Mint Hill, Matthews, Cornelius, Davidson (kept as text since a few towns report ranges/approximations like "+/-2")
 
   -- parties
   applicant text,
@@ -50,3 +52,9 @@ alter table rezoning_projects enable row level security;
 create policy "Public can read projects"
   on rezoning_projects for select
   using (true);
+
+-- MIGRATION for existing databases (e.g. the live production table): "create table if
+-- not exists" above won't add new columns to a table that already exists. Run this too
+-- if you set up the table before acreage/current_zoning were added (2026-08-13).
+alter table rezoning_projects add column if not exists acreage text;
+alter table rezoning_projects add column if not exists current_zoning text;

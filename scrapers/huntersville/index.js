@@ -89,7 +89,9 @@ async function fetchAndParse() {
       // available, so it's used as the keyword-matching input.
       project_type: classifyProjectType({ description: name }),
       request_type: 'Rezoning',
+      current_zoning: null,
       zoning: null,
+      acreage: null, // not available from this GIS layer
       applicant: null,
       developer: null,
       owner: null,

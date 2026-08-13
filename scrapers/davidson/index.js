@@ -116,6 +116,7 @@ async function fetchDetail(item) {
     request_type: null, // Davidson calls these "Map Amendments" not "Rezonings" — not
     // every Development Project is necessarily one, so left null rather than assumed
     zoning: fields['Planning Areas'] || fields['Planning Area'] || null,
+    acreage: fields['Acres'] || null,
     applicant: fields['Applicant'] || null,
     developer: fields['Developer'] || null,
     owner: fields['Property Owner'] || null,

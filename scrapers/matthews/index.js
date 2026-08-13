@@ -127,7 +127,9 @@ async function fetchAndParse() {
       // Institutional/Public), falling back to the zoning code prefix otherwise.
       project_type: classifyProjectType({ zoning: proposedZoning, description: name }),
       request_type: 'Rezoning',
+      current_zoning: currentZoning,
       zoning: proposedZoning,
+      acreage: null, // not available — Matthews' table has no separate acreage column
       applicant: nameLines[0] || null,
       developer: null,
       owner: null,
