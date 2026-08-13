@@ -30,6 +30,7 @@
  */
 
 import { upsertProjects } from '../lib/upsert.js'
+import { classifyProjectType } from '../lib/classify.js'
 import * as cheerio from 'cheerio'
 
 const BASE_URL = 'https://www.charlottenc.gov/Growth-and-Development/Planning-and-Development/Rezoning'
@@ -123,6 +124,9 @@ async function fetchDetail(petitionId, url) {
     return isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10)
   }
 
+  const zoning = h6Map['Proposed Zoning'] || null
+  const description = h2Map['Rezoning Application in Accela'] || h2Map['Location'] || null
+
   return {
     name: h3Map['Petitioner'] || petitionId,
     source: 'charlotte',
@@ -133,14 +137,16 @@ async function fetchDetail(petitionId, url) {
     parcel_id: null, // not on this page — see file header
     latitude,
     longitude,
-    project_type: null, // not directly categorized here; could be inferred from zoning codes
+    // Charlotte uses its own newer "UDO" zoning code system (e.g. "N2-B(CD)") — see
+    // scrapers/lib/classify.js header for confidence caveats on this specific mapping.
+    project_type: classifyProjectType({ zoning, description, zoningSystem: 'udo' }),
     request_type: 'Rezoning',
-    zoning: h6Map['Proposed Zoning'] || null,
+    zoning,
     applicant: h3Map['Petitioner'] || null,
     developer: null,
     owner: null,
     status: h3Map['Status'] || null,
-    description: h2Map['Rezoning Application in Accela'] || h2Map['Location'] || null,
+    description,
     last_action_date: parseDate(dates['Approval Date'] || dates['Council Decision Date']),
     hearing_date: parseDate(dates['Public Hearing Date']),
   }

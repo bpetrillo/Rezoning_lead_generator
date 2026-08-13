@@ -98,6 +98,20 @@ address. Mint Hill still isn't geocoded (see above — no address field to geoco
 at all). Charlotte and Huntersville already had real coordinates from their own sources,
 so they don't need this.
 
+**Project type classification (`scrapers/lib/classify.js`)** — the map colors dots by
+category (Residential/Commercial/Industrial/etc., matching Boardwalk's legend), but no
+town publishes this category directly except Pineville (whose bulletin page already
+groups projects this way). Everywhere else, this infers a category from whatever real
+signal each town happens to provide — an explicit building-type field (Davidson only),
+zoning code prefixes (reliable for Mint Hill/Matthews' traditional codes, lower
+confidence for Charlotte's newer UDO codes), or keyword matching against the free-text
+description (used for Cornelius, since its "Zoning" field is just the generic value
+"Conditional Zoning" — confirmed live, not a real code — and for Huntersville, which has
+no zoning or description field at all, only the project name). Validated against 12 real
+cases pulled from actual data seen throughout this build — all passed. Returns `null`
+rather than guessing when nothing matches with reasonable confidence; an uncategorized
+gray dot on the map is more honest than a wrong-colored one.
+
 ## Not included yet
 
 - Geocoding for Mint Hill — needs a parcel-based lookup instead of address-based (see

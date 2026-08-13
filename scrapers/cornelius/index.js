@@ -35,6 +35,7 @@
 
 import { upsertProjects } from '../lib/upsert.js'
 import { geocodeRecords } from '../lib/geocode.js'
+import { classifyProjectType } from '../lib/classify.js'
 import * as cheerio from 'cheerio'
 
 const LIST_URL = 'https://www.cornelius.org/government/departments/planning_/projects/development_projects/'
@@ -120,7 +121,10 @@ async function fetchDetail(item) {
     parcel_id: fields['Parcel(s)'] || null,
     latitude: null, // filled in by geocodeRecords() below, when address resolves
     longitude: null,
-    project_type: null,
+    // Cornelius's "Zoning" field is usually just the generic value "Conditional Zoning"
+    // (confirmed live) — not a usable code — so classification here leans almost
+    // entirely on the description/request text.
+    project_type: classifyProjectType({ zoning: fields['Zoning'], description: fields['Request'] }),
     request_type: caseId ? 'Rezoning' : null, // only cases with a REZ number are
     // confirmed rezonings — other development project types (site plans, etc.) don't
     // get mislabeled

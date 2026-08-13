@@ -1,12 +1,29 @@
+import { getTypeColor, getTypeLabel } from '../lib/typeColors.js'
+
 export default function ProjectDetail({ project: p, onBack }) {
+  const color = getTypeColor(p.project_type)
   return (
     <div style={{ padding: 16 }}>
       <button onClick={onBack} style={{ marginBottom: 12, cursor: 'pointer' }}>
         ← Back to list
       </button>
       <h2 style={{ margin: '0 0 4px' }}>{p.name}</h2>
-      <div style={{ color: '#666', marginBottom: 8 }}>
-        {p.status} {p.last_action_date ? `· ${p.last_action_date}` : ''}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+        <span
+          style={{
+            fontSize: 11,
+            fontWeight: 600,
+            padding: '2px 8px',
+            borderRadius: 12,
+            color: 'white',
+            backgroundColor: color,
+          }}
+        >
+          {getTypeLabel(p.project_type)}
+        </span>
+        <span style={{ color: '#666' }}>
+          {p.status} {p.last_action_date ? `· ${p.last_action_date}` : ''}
+        </span>
       </div>
       <div style={{ marginBottom: 12 }}>
         By <strong>{p.applicant}</strong>

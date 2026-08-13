@@ -36,6 +36,7 @@
 
 import { upsertProjects } from '../lib/upsert.js'
 import { geocodeRecords } from '../lib/geocode.js'
+import { classifyProjectType } from '../lib/classify.js'
 import * as cheerio from 'cheerio'
 
 const PAGE_URL = 'https://www.matthewsnc.gov/pview.aspx?id=20825&catid=0'
@@ -109,8 +110,10 @@ async function fetchAndParse() {
     const parcelLine = locLines.find((l) => /tax parcel|^parcel/i.test(l)) || null
     const addressLines = locLines.filter((l) => l !== parcelLine)
 
+    const name = nameLines[nameLines.length - 1] || nameLines[0] || caseId
+
     records.push({
-      name: nameLines[nameLines.length - 1] || nameLines[0] || caseId,
+      name,
       source: 'matthews',
       source_id: caseId,
       source_url: PAGE_URL, // all cases live on one page — no per-case URL to link to
@@ -119,7 +122,10 @@ async function fetchAndParse() {
       parcel_id: parcelLine ? parcelLine.replace(/^(tax )?parcel s?/i, '').trim() : null,
       latitude: null, // TODO: geocode — see file header
       longitude: null,
-      project_type: null,
+      // No separate description field exists on this page — using the case name itself
+      // as the keyword-matching input (e.g. "Mt. Zion Senior Center" hints at
+      // Institutional/Public), falling back to the zoning code prefix otherwise.
+      project_type: classifyProjectType({ zoning: proposedZoning, description: name }),
       request_type: 'Rezoning',
       zoning: proposedZoning,
       applicant: nameLines[0] || null,

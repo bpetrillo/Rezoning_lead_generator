@@ -35,6 +35,7 @@
 
 import { upsertProjects } from '../lib/upsert.js'
 import { geocodeRecords } from '../lib/geocode.js'
+import { classifyProjectType } from '../lib/classify.js'
 import * as cheerio from 'cheerio'
 
 const LIST_URL = 'https://www.townofdavidson.org/106/Development-Projects'
@@ -90,7 +91,9 @@ async function fetchDetail(item) {
 
   const sourceId = item.url.split('/').filter(Boolean).slice(-2, -1)[0] || item.name
 
-  return {
+    const description = fields['Development Description'] || fields['Project Description'] || null
+
+    return {
     name: item.name,
     source: 'davidson',
     source_id: sourceId,
@@ -105,7 +108,11 @@ async function fetchDetail(item) {
     parcel_id: fields['Parcel ID'] || fields['Parcel IDs'] || null,
     latitude: null, // filled in by geocodeRecords() below, when address resolves
     longitude: null,
-    project_type: null,
+    // "Building Type" (confirmed live, e.g. "Single-Family Detached Home") is the
+    // strongest signal Davidson provides when present — more reliable than the
+    // "Planning Area" text ("Village Center", "Rural Planning Area", etc.), which
+    // doesn't map cleanly to these categories.
+    project_type: classifyProjectType({ buildingType: fields['Building Type'], description }),
     request_type: null, // Davidson calls these "Map Amendments" not "Rezonings" — not
     // every Development Project is necessarily one, so left null rather than assumed
     zoning: fields['Planning Areas'] || fields['Planning Area'] || null,
@@ -113,10 +120,10 @@ async function fetchDetail(item) {
     developer: fields['Developer'] || null,
     owner: fields['Property Owner'] || null,
     status: null, // not present as a distinct field on this page
-    description: fields['Development Description'] || fields['Project Description'] || null,
+    description,
     last_action_date: null,
     hearing_date: null,
-  }
+    }
 }
 
 async function main() {

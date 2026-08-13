@@ -40,6 +40,7 @@
  */
 
 import { upsertProjects } from '../lib/upsert.js'
+import { classifyProjectType } from '../lib/classify.js'
 import * as cheerio from 'cheerio'
 
 const PAGE_URL = 'https://www.minthill.com/departments/planning_zoning/development_activity/rezoning.php'
@@ -142,8 +143,10 @@ async function fetchAndParse() {
           parcel_id: fields['Parcel Number(s)'] || null,
           latitude: null, // TODO: geocode from parcel_id / address — see file header
           longitude: null,
-          project_type: null, // not provided directly; could be inferred later from
-          // Current/Proposed Zoning codes if we build a zoning-code → category mapping
+          project_type: classifyProjectType({
+            zoning: fields['Proposed Zoning'],
+            description: fields['Description'],
+          }),
           request_type: 'Rezoning',
           zoning: fields['Proposed Zoning'] || null,
           applicant: fields['Applicant'] || null,

@@ -32,6 +32,7 @@
  */
 
 import { upsertProjects } from '../lib/upsert.js'
+import { classifyProjectType } from '../lib/classify.js'
 
 const QUERY_URL =
   "https://services7.arcgis.com/CADYoH7VVBN3BQHU/arcgis/rest/services/Development_Projects/FeatureServer/0/query" +
@@ -83,8 +84,10 @@ async function fetchAndParse() {
       parcel_id: null, // not available from this source
       latitude,
       longitude,
-      project_type: null, // Pln_Typ='Rezoning' describes the request type, not the
-      // resulting land use — left null rather than guessed
+      // No zoning or description field exists in this GIS layer at all — the project
+      // name itself (e.g. "Northbrook Storage", "Long Creek Retail") is the only signal
+      // available, so it's used as the keyword-matching input.
+      project_type: classifyProjectType({ description: name }),
       request_type: 'Rezoning',
       zoning: null,
       applicant: null,
