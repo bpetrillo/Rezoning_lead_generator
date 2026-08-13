@@ -8,12 +8,18 @@
     "build": "vite build",
     "preview": "vite preview",
     "scrape:charlotte": "node scrapers/charlotte/index.js",
-    "scrape:mint-hill": "node scrapers/mint_hill/index.js"
+    "scrape:mint-hill": "node scrapers/mint_hill/index.js",
+    "scrape:matthews": "node scrapers/matthews/index.js",
+    "scrape:pineville": "node scrapers/pineville/index.js",
+    "scrape:huntersville": "node scrapers/huntersville/index.js",
+    "scrape:cornelius": "node scrapers/cornelius/index.js",
+    "scrape:davidson": "node scrapers/davidson/index.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
     "cheerio": "^1.2.0",
     "leaflet": "^1.9.4",
+    "playwright": "^1.62.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-leaflet": "^4.2.1"

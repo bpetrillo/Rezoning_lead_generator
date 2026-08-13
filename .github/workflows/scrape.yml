@@ -15,6 +15,8 @@ jobs:
         with:
           node-version: 20
       - run: npm install
+      - name: Install Playwright browser (for Matthews scraper)
+        run: npx playwright install --with-deps chromium
       - name: Charlotte
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -25,5 +27,31 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: node scrapers/mint_hill/index.js
-      # Add one step per remaining town scraper as they're built (Matthews, Pineville,
-      # Huntersville, Cornelius, Davidson) — see scrapers/README.md
+      # Matthews is written (scrapers/matthews/index.js) but currently blocked — the
+      # site returns 403 to plain fetch requests. Left out of the daily run until that's
+      # resolved (needs a headless-browser fetch instead). See scrapers/README.md.
+      - name: Pineville
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scrapers/pineville/index.js
+      - name: Huntersville
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scrapers/huntersville/index.js
+      - name: Cornelius
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scrapers/cornelius/index.js
+      - name: Davidson
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scrapers/davidson/index.js
+      # Matthews now uses a headless browser (Playwright) instead of plain fetch to
+      # try to get past its bot protection — see scrapers/matthews/index.js and
+      # scrapers/README.md. This is UNVERIFIED (couldn't test from the dev sandbox,
+      # which also can't reach matthewsnc.gov). Test it manually first —
+      # `npm run scrape:matthews` — before adding a step for it here.

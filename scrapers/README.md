@@ -9,13 +9,15 @@ from.
 
 | Municipality | Script | Status |
 |---|---|---|
-| Charlotte | `charlotte/index.js` | **Verified live** — built and tested against the real page structure (charlottenc.gov). Has real address + lat/long (pulled from an embedded Google Maps iframe). No parcel ID on this page. |
-| Mint Hill | `mint_hill/index.js` | **Verified live** — built and tested against the real page structure (minthill.com). Has parcel ID but no address or coordinates — geocoding is still a TODO. |
-| Matthews | — | Not started |
-| Pineville | — | Not started |
-| Huntersville | — | Not started |
-| Cornelius | — | Not started |
-| Davidson | — | Not started |
+| Charlotte | `charlotte/index.js` | **Verified live** — real address + lat/long (pulled from an embedded Google Maps iframe). No parcel ID on this page. |
+| Mint Hill | `mint_hill/index.js` | **Verified live** — has parcel ID but no address or coordinates — geocoding is still a TODO. |
+| Matthews | `matthews/index.js` | **Fix attempted, unverified.** Was blocked by 403 Forbidden on plain `fetch` (even with browser headers + session cookie simulation). Now uses a headless browser (Playwright) instead — this is the standard fix for this class of block, but it could NOT be tested end-to-end: the dev sandbox can't download Playwright's Chromium binary OR reach matthewsnc.gov (both blocked by its own network allowlist). **Test with `npm run scrape:matthews` before trusting this or adding it to the daily GitHub Actions run** — if it works, add a step for it in `.github/workflows/scrape.yml` (a step is already prepared as a comment there) and don't forget `npx playwright install --with-deps chromium` needs to run first in CI (already added). Parsing logic itself (table structure, field extraction) was verified against real content earlier and hasn't changed. |
+| Pineville | `pineville/index.js` | **Verified live, intentionally thin.** No structured case data exists on Pineville's site at all (checked both the planning bulletin page and Municode meeting agendas). Captures project name, category, and document links only — no address, parcel, zoning, applicant, or dates. See the file's header comment for the full reasoning. |
+| Huntersville | `huntersville/index.js` | **Verified live, best coordinate quality of any town so far.** Huntersville publishes rezoning cases through a public ArcGIS FeatureServer (backing their "Development Projects" map), not a regular web page. Real petition numbers (R26-01 style) and real polygon geometry — coordinates are computed as a centroid, no geocoding needed. No address or parcel ID available. Linked detail pages on huntersville.org are NOT scraped for extra fields since they're unreliable (one tested live link 404'd) — see file header. |
+| Cornelius | `cornelius/index.js` | **Verified live.** Status-grouped nav (Under Construction/Approved/Proposed, 32 projects) with individual detail pages, each a clean label/value table (Applicant, Request, Acreage, Parcel(s), Location, Zoning). Real addresses in most cases (a few are "unaddressed parcel on [road]" instead). No coordinates anywhere — geocoding TODO. Most but not all projects carry a "(REZ NN-YY)" petition number in the page title; only those get `request_type: 'Rezoning'`, others left null rather than mislabeled. |
+| Davidson | `davidson/index.js` | **Verified live.** Sidebar-nav + detail-page pattern like Cornelius (22 projects), clean `<li><strong>Label:</strong> Value</li>` fields. Real addresses and parcel IDs. No coordinates (checked for an ArcGIS backend behind their "interactive map" — it's a static image, not a live layer). Terminology note: Davidson calls these "Map Amendments," not "Rezonings" — their pending-amendments page was empty at time of writing, so this scrapes the durable Development Projects list instead. No formal case ID system, so source_id is a URL-derived slug. |
+
+**All 7 Mecklenburg County municipalities now have a scraper.** Matthews is the only one not currently running in production (see status above).
 
 Note: my first pass at the Charlotte scraper (before checking the live site) assumed
 Charlotte used the Legistar agenda system, based on general knowledge of what other NC
