@@ -24,12 +24,40 @@
  *   - Date fields are inconsistently formatted ("August 13, 2026" vs "Aug 13, 2020 7:00 pm"
  *     vs "Differed to February 21, 2022") — parseLooseDate() below handles the common
  *     cases and returns null rather than guessing when it can't parse confidently.
+ *
+ * REAL BUG FOUND AND FIXED (2026-08-13): the initial version of this scraper leaked raw
+ * admin-widget JavaScript (`RZ.module = 'revizefaq'; RZ.recordid = '2219'; ...`) into the
+ * `name` field for every record, visible on the live deployed site. Root cause: each
+ * .faq-question element contains an .editbtns admin-controls div (hidden CSS-wise, but
+ * still in the raw HTML) holding an inline <script>, as a SIBLING of the real title
+ * <button> — so `.faq-question.text()` concatenated both. Fixed by (a) stripping
+ * <script>/<style> tags before reading text, and (b) targeting the title <button>
+ * directly rather than its whole parent container. Confirmed against the exact broken
+ * record from production (ZC25-2, Epcon Phase II) and against all 106 live items — the
+ * button is present on every single one, including the sparsest old entries.
+ * ANYONE RE-RUNNING THIS SCRAPER SHOULD SEE CLEAN NAMES NOW — but the already-upserted
+ * rows in Supabase from before this fix still have the garbage text until re-scraped.
  */
 
 import { upsertProjects } from '../lib/upsert.js'
 import * as cheerio from 'cheerio'
 
 const PAGE_URL = 'https://www.minthill.com/departments/planning_zoning/development_activity/rezoning.php'
+
+/**
+ * Cheerio's (and the browser's) .text() includes the raw source of any nested <script>
+ * tags as plain text — confirmed live: this page has hidden admin edit/delete widgets
+ * (inline <script> blocks setting `RZ.module`, `RZ.recordid`, etc.) sitting inside
+ * .faq-question and other elements, which were leaking into the scraped name field as
+ * garbage JS text. This strips script/style tags from a cheerio selection before
+ * reading its text, everywhere in this file that extracts text from a container that
+ * might have nested scripts.
+ */
+function cleanText($el) {
+  const clone = $el.clone()
+  clone.find('script, style').remove()
+  return clone.text()
+}
 
 function parseLooseDate(raw) {
   if (!raw) return null
@@ -68,12 +96,14 @@ async function fetchAndParse() {
   const records = []
 
   $('.faq-category').each((_, catEl) => {
-    const year = $(catEl).find('h2, h3, .faq-category-title').first().text().trim()
+    const year = cleanText($(catEl).find('h2, h3, .faq-category-title').first()).trim()
 
     $(catEl)
       .find('.faq-item')
       .each((_, itemEl) => {
-        const title = $(itemEl).find('.faq-question').first().text().replace(/\s+/g, ' ').trim()
+        const title = cleanText($(itemEl).find('.faq-question button').first())
+          .replace(/\s+/g, ' ')
+          .trim()
         const { fileId, statusFromTitle, nameFromTitle } = parseTitle(title)
 
         const fields = {}
@@ -82,7 +112,7 @@ async function fetchAndParse() {
           .each((_, trEl) => {
             const cells = $(trEl)
               .find('td, th')
-              .map((_, td) => $(td).text().replace(/\s+/g, ' ').trim())
+              .map((_, td) => cleanText($(td)).replace(/\s+/g, ' ').trim())
               .get()
             if (cells.length >= 2) {
               fields[cells[0]] = cells.slice(1).join(' ').trim()
