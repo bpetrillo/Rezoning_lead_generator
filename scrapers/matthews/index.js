@@ -7,8 +7,8 @@
  * IMPORTANT: this site returns 403 Forbidden to plain HTTP requests, even with spoofed
  * browser headers and a simulated session cookie (both tried and failed). This version
  * uses a real headless browser (Playwright) instead of `fetch` to get past it — see
- * fetchWithBrowser() below for the reasoning and an honest caveat about what's verified
- * and what isn't.
+ * fetchWithBrowser() below. Confirmed working against the live site (203 real cases
+ * parsed and upserted successfully).
  *
  * Unlike Charlotte (paginated by year, one detail page per petition) or Mint Hill
  * (accordion), Matthews publishes ALL rezoning cases back to ~2010 in a single dense
@@ -22,11 +22,10 @@
  *   - LOCATION cell:    [street address, "Tax Parcel ..." / "Parcel ..." line]
  *   - STATUS cell:      [status word, decision date]
  *
- * No address geocoding needed to be *found* here (real street addresses are present),
- * but — like Mint Hill — there's no lat/long anywhere on this page, so pins still need
- * a geocoding pass (Census Geocoder API is a good free/keyless option) before they'll
- * show up on the map. Also note this page is ONE long table with no year-based URL
- * pattern, so the fetch step (browser-page-load aside) only needs one page load total.
+ * Real street addresses are present in the LOCATION cell, so geocoding via the US
+ * Census Geocoder API (scrapers/lib/geocode.js, free/keyless) is wired in below —
+ * unlike Mint Hill, which has no address field at all (parcel numbers only) and so
+ * can't use this approach.
  *
  * Known limitation: a handful of old combined "Motion" petitions (e.g. "2019-2.A/B/C",
  * "Town of Matthews Motion 2023-1") bundle multiple cases/dates into one row. The ID
@@ -36,6 +35,7 @@
  */
 
 import { upsertProjects } from '../lib/upsert.js'
+import { geocodeRecords } from '../lib/geocode.js'
 import * as cheerio from 'cheerio'
 
 const PAGE_URL = 'https://www.matthewsnc.gov/pview.aspx?id=20825&catid=0'
@@ -60,15 +60,10 @@ function parseDate(raw) {
 /**
  * Fetches the page via a real headless Chromium browser (Playwright) instead of plain
  * `fetch`. matthewsnc.gov returned 403 even with spoofed browser headers and a simulated
- * session cookie — the next-strongest theory is it's checking something only a real
- * browser produces (TLS/JA3 fingerprint, or a JS-driven check), which no amount of
- * header spoofing from Node's fetch can replicate. A real browser sidesteps that
- * entirely since it presents an actual browser fingerprint and runs any page JS.
- *
- * NOTE: this has NOT been verified against the live site — my sandbox can't reach
- * matthewsnc.gov either way (network allowlist doesn't include it), so this is the
- * next reasonable fix to try, not a confirmed one. If it still 403s, the block is
- * likely IP-reputation or geofencing based, which no client-side change can fix.
+ * session cookie — the theory was it's checking something only a real browser produces
+ * (TLS/JA3 fingerprint, or a JS-driven check), which no amount of header spoofing from
+ * Node's fetch can replicate. Confirmed correct: this gets past the block and returns
+ * the real page (203 cases parsed successfully on 2026-08-13).
  */
 async function fetchWithBrowser() {
   const { chromium } = await import('playwright')
@@ -143,6 +138,7 @@ async function fetchAndParse() {
 async function main() {
   const records = await fetchAndParse()
   console.log(`Parsed ${records.length} Matthews rezoning cases.`)
+  await geocodeRecords(records)
   await upsertProjects(records)
 }
 

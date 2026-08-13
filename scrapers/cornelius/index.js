@@ -11,6 +11,11 @@
  * links — there's no status field printed on the individual project pages themselves
  * for pending ones (only approved ones show an explicit "Approval Date").
  *
+ * Link discovery is scoped to `#flyout-wrap` (the sidebar project nav), not the whole
+ * page — a page-wide search caught a footer "Login" link too, whose href happened to
+ * contain a `ReturnUrl=` query param pointing back to this page, matching the
+ * `includes('development_projects')` filter (confirmed live, then fixed).
+ *
  * Like Huntersville, this covers development activity broadly (site plans, subdivision
  * amendments, etc.), not exclusively rezonings — but most carry a "(REZ NN-YY)" petition
  * number in the page title, which we extract when present.
@@ -22,11 +27,14 @@
  *
  * Real addresses are usually present (e.g. "20401 Zion Ave"), though a few — like the
  * Cornelius Inn case checked while researching this town — are "unaddressed parcel on
- * [road name]" instead. No coordinates anywhere on these pages, so geocoding from the
- * address or parcel is still a TODO here, same as Mint Hill and Matthews.
+ * [road name]" instead, which won't geocode (confirmed live: the Census Geocoder
+ * returns a clean empty match for these, not an error). No coordinates are present on
+ * these pages directly, so geocoding via the US Census Geocoder API
+ * (scrapers/lib/geocode.js) is wired in below for the addresses that do exist.
  */
 
 import { upsertProjects } from '../lib/upsert.js'
+import { geocodeRecords } from '../lib/geocode.js'
 import * as cheerio from 'cheerio'
 
 const LIST_URL = 'https://www.cornelius.org/government/departments/planning_/projects/development_projects/'
@@ -43,7 +51,7 @@ async function fetchProjectList() {
   const items = []
   let currentStatus = null
 
-  $('a').each((_, el) => {
+  $('#flyout-wrap a').each((_, el) => {
     const text = $(el).text().trim()
     const href = $(el).attr('href')
     if (!href || !href.includes('development_projects') || !text) return
@@ -110,7 +118,7 @@ async function fetchDetail(item) {
     municipality: 'Cornelius',
     address: fields['Location'] || null,
     parcel_id: fields['Parcel(s)'] || null,
-    latitude: null, // TODO: geocode — no coordinates on this page, see file header
+    latitude: null, // filled in by geocodeRecords() below, when address resolves
     longitude: null,
     project_type: null,
     request_type: caseId ? 'Rezoning' : null, // only cases with a REZ number are
@@ -137,6 +145,7 @@ async function main() {
     await new Promise((r) => setTimeout(r, 150))
   }
   console.log(`Parsed ${records.length} Cornelius projects.`)
+  await geocodeRecords(records)
   await upsertProjects(records)
 }
 
