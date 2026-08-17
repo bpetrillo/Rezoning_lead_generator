@@ -1,4 +1,7 @@
+import { useEffect, useState } from 'react'
 import { getTypeColor, getTypeLabel } from '../lib/typeColors.js'
+import { LEAD_STATUSES } from '../lib/leadStatus.js'
+import { supabase } from '../lib/supabaseClient.js'
 import MiniMap from './MiniMap.jsx'
 
 function Section({ title, children }) {
@@ -22,8 +25,46 @@ function Row({ label, children }) {
   )
 }
 
-export default function ProjectDetail({ project: p, onBack }) {
+export default function ProjectDetail({ project: p, onBack, onUpdate }) {
   const color = getTypeColor(p.project_type)
+
+  // Local edit state for the two personal-tracking fields. Reset whenever the selected
+  // project actually changes (p.id) — this component doesn't always unmount between
+  // selections (e.g. clicking a different map marker while this panel is already open
+  // just updates props, it doesn't remount), so initializing state only once with
+  // useState's initial value would leave stale Contacted/Interested/etc. showing for
+  // the wrong project.
+  const [leadStatus, setLeadStatus] = useState(p.lead_status || '')
+  const [leadNotes, setLeadNotes] = useState(p.lead_notes || '')
+  const [saveState, setSaveState] = useState('idle') // 'idle' | 'saving' | 'saved' | 'error'
+
+  useEffect(() => {
+    setLeadStatus(p.lead_status || '')
+    setLeadNotes(p.lead_notes || '')
+    setSaveState('idle')
+  }, [p.id])
+
+  async function saveField(fields) {
+    setSaveState('saving')
+    const { error } = await supabase.from('rezoning_projects').update(fields).eq('id', p.id)
+    setSaveState(error ? 'error' : 'saved')
+    if (error) console.error('Failed to save lead tracking field:', error.message)
+    else onUpdate?.(p.id, fields)
+  }
+
+  function handleStatusChange(e) {
+    const value = e.target.value
+    setLeadStatus(value)
+    saveField({ lead_status: value || null })
+  }
+
+  function handleNotesBlur() {
+    // Saved on blur rather than on every keystroke — avoids a network request per
+    // character while typing.
+    if (leadNotes !== (p.lead_notes || '')) {
+      saveField({ lead_notes: leadNotes || null })
+    }
+  }
 
   // Boardwalk shows a headline summary like "4.94-Acre Residential Rezoning by True
   // Homes" — built here from whatever real fields we actually have (acreage,
@@ -64,6 +105,44 @@ export default function ProjectDetail({ project: p, onBack }) {
       </div>
 
       <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8 }}>{headline}</div>
+
+      <Section title="My Pipeline">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+          <select
+            value={leadStatus}
+            onChange={handleStatusChange}
+            style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid #ccc', fontSize: 14 }}
+          >
+            {LEAD_STATUSES.map((s) => (
+              <option key={s.value} value={s.value}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+          <span style={{ fontSize: 12, color: '#999' }}>
+            {saveState === 'saving' && 'Saving...'}
+            {saveState === 'saved' && 'Saved'}
+            {saveState === 'error' && 'Failed to save — try again'}
+          </span>
+        </div>
+        <textarea
+          value={leadNotes}
+          onChange={(e) => setLeadNotes(e.target.value)}
+          onBlur={handleNotesBlur}
+          placeholder="Notes — e.g. who you spoke with, next steps..."
+          rows={3}
+          style={{
+            width: '100%',
+            padding: 8,
+            borderRadius: 6,
+            border: '1px solid #ccc',
+            fontSize: 14,
+            fontFamily: 'inherit',
+            resize: 'vertical',
+            boxSizing: 'border-box',
+          }}
+        />
+      </Section>
 
       {p.description && <p style={{ color: '#333', lineHeight: 1.5 }}>{p.description}</p>}
 

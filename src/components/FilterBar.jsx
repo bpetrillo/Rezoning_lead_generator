@@ -1,4 +1,11 @@
-export default function FilterBar({ filters, setFilters, municipalities, projectTypes, resultCount }) {
+export default function FilterBar({
+  filters,
+  setFilters,
+  municipalities,
+  projectTypes,
+  leadStatuses,
+  resultCount,
+}) {
   return (
     <div
       style={{
@@ -36,6 +43,19 @@ export default function FilterBar({ filters, setFilters, municipalities, project
         {projectTypes.map((t) => (
           <option key={t} value={t}>
             {t}
+          </option>
+        ))}
+      </select>
+      <select
+        value={filters.leadStatus}
+        onChange={(e) => setFilters((f) => ({ ...f, leadStatus: e.target.value }))}
+        style={{ padding: '8px 10px', border: '1px solid #ccc', borderRadius: 6 }}
+      >
+        <option value="all">My pipeline: all</option>
+        <option value="untracked">Not tracked yet</option>
+        {leadStatuses.map((s) => (
+          <option key={s} value={s}>
+            {s}
           </option>
         ))}
       </select>

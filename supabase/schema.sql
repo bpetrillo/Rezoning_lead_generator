@@ -38,6 +38,12 @@ create table if not exists rezoning_projects (
   first_seen_at timestamptz default now(),
   last_scraped_at timestamptz default now(),
 
+  -- personal pipeline tracking — set by you in the app, never touched by scrapers.
+  -- Separate from `status` above, which is the town's own official status (Approved,
+  -- Pending, etc.) — this is your own CRM-style tracking of outreach on the lead.
+  lead_status text,                   -- "Contacted", "Interested", "Follow Up", or "Client"
+  lead_notes text,
+
   unique (source, source_id)
 );
 
@@ -53,8 +59,30 @@ create policy "Public can read projects"
   on rezoning_projects for select
   using (true);
 
+-- Personal pipeline tracking (lead_status/lead_notes) needs to be editable from the
+-- app itself, not just the scrapers. IMPORTANT TRADEOFF: this app has no login system,
+-- so the public anon key is the only key the frontend has — meaning this grant lets
+-- ANYONE visiting the live site edit these two fields, not just you. Scoped as tightly
+-- as possible to limit the blast radius: the column-level GRANT below means the anon
+-- role can ONLY write to lead_status/lead_notes, nothing else on this table (scraped
+-- data, addresses, parcel IDs, etc. all stay read-only regardless of this policy). If
+-- this ever becomes a real concern (public traffic, vandalism), the right fix is adding
+-- real authentication (e.g. Supabase Auth) and restricting this policy to logged-in
+-- users only — not in scope for this pass.
+create policy "Public can update lead tracking fields"
+  on rezoning_projects for update
+  using (true)
+  with check (true);
+
+grant update (lead_status, lead_notes) on rezoning_projects to anon;
+
 -- MIGRATION for existing databases (e.g. the live production table): "create table if
 -- not exists" above won't add new columns to a table that already exists. Run this too
 -- if you set up the table before acreage/current_zoning were added (2026-08-13).
 alter table rezoning_projects add column if not exists acreage text;
 alter table rezoning_projects add column if not exists current_zoning text;
+
+-- MIGRATION for lead tracking (2026-08-14): run this plus the policy/grant above if
+-- your table already existed before this feature was added.
+alter table rezoning_projects add column if not exists lead_status text;
+alter table rezoning_projects add column if not exists lead_notes text;
