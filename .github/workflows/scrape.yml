@@ -6,6 +6,14 @@ on:
     - cron: '0 8 * * *'
   workflow_dispatch: {} # lets you trigger it manually from the Actions tab
 
+# Needed so the "commit backup" step below can push the exported Excel file back to
+# the repo using the workflow's built-in token. IMPORTANT: this repo setting
+# (Settings → Actions → General → Workflow permissions → "Read and write permissions")
+# is very likely Admin-only, the same way adding secrets was — if the commit step
+# fails with a permission error, that's almost certainly why. See README.md.
+permissions:
+  contents: write
+
 jobs:
   scrape:
     runs-on: ubuntu-latest
@@ -52,3 +60,15 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: node scrapers/matthews/index.js
+      - name: Export full dataset to Excel backup
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/export-to-excel.js
+      - name: Commit Excel backup to repo
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add backups/rezoning_projects.xlsx
+          git diff --staged --quiet && echo "No changes to backup file, skipping commit." || git commit -m "Update Excel backup ($(date -u +%Y-%m-%d))"
+          git push

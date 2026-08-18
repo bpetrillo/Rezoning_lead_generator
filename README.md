@@ -112,6 +112,28 @@ cases pulled from actual data seen throughout this build — all passed. Returns
 rather than guessing when nothing matches with reasonable confidence; an uncategorized
 gray dot on the map is more honest than a wrong-colored one.
 
+**Excel backup (`scripts/export-to-excel.js`)** — a full snapshot of every row in
+Supabase, written to `backups/rezoning_projects.xlsx`, so the data doesn't only live in
+one place. Wired into the daily GitHub Actions run: after all 7 scrapers finish, it
+exports the current full table and commits the file back into the repo. Because it's
+committed to git (not just overwritten on disk), every day it runs leaves a permanent,
+recoverable version in git history — real protection against losing data, not just a
+single point-in-time copy.
+
+**Run it yourself anytime:**
+```
+npm run export:excel
+```
+Writes to `backups/rezoning_projects.xlsx` locally using your own `.env` credentials —
+useful immediately, no need to wait on GitHub Actions being fully sorted out.
+
+**Known gap, same pattern as secrets:** the daily workflow needs "Read and write
+permissions" enabled for GitHub Actions (Settings → Actions → General → Workflow
+permissions) so it can push the backup commit back to the repo. Based on the same
+pattern as the Supabase secrets issue, this is very likely an Admin-only setting — if
+the "Commit Excel backup to repo" step fails with a permissions error, that's why, and
+Paul would need to enable it once.
+
 ## Not included yet
 
 - Geocoding for Mint Hill — needs a parcel-based lookup instead of address-based (see
