@@ -36,11 +36,20 @@ export default function ProjectDetail({ project: p, onBack, onUpdate }) {
   // the wrong project.
   const [leadStatus, setLeadStatus] = useState(p.lead_status || '')
   const [leadNotes, setLeadNotes] = useState(p.lead_notes || '')
+  // Editable contact fields — initialized to the manual override if one exists,
+  // otherwise to whatever was auto-extracted, so the input shows the effective value
+  // either way. Saving always writes to the manual_* columns, never contact_email/
+  // contact_phone directly — those get overwritten by scrapers on every re-run, which
+  // would silently erase a manual entry. See schema.sql for the full reasoning.
+  const [contactEmail, setContactEmail] = useState(p.manual_contact_email || p.contact_email || '')
+  const [contactPhone, setContactPhone] = useState(p.manual_contact_phone || p.contact_phone || '')
   const [saveState, setSaveState] = useState('idle') // 'idle' | 'saving' | 'saved' | 'error'
 
   useEffect(() => {
     setLeadStatus(p.lead_status || '')
     setLeadNotes(p.lead_notes || '')
+    setContactEmail(p.manual_contact_email || p.contact_email || '')
+    setContactPhone(p.manual_contact_phone || p.contact_phone || '')
     setSaveState('idle')
   }, [p.id])
 
@@ -63,6 +72,20 @@ export default function ProjectDetail({ project: p, onBack, onUpdate }) {
     // character while typing.
     if (leadNotes !== (p.lead_notes || '')) {
       saveField({ lead_notes: leadNotes || null })
+    }
+  }
+
+  function handleContactEmailBlur() {
+    const effectiveCurrent = p.manual_contact_email || p.contact_email || ''
+    if (contactEmail !== effectiveCurrent) {
+      saveField({ manual_contact_email: contactEmail || null })
+    }
+  }
+
+  function handleContactPhoneBlur() {
+    const effectiveCurrent = p.manual_contact_phone || p.contact_phone || ''
+    if (contactPhone !== effectiveCurrent) {
+      saveField({ manual_contact_phone: contactPhone || null })
     }
   }
 
@@ -152,17 +175,64 @@ export default function ProjectDetail({ project: p, onBack, onUpdate }) {
             <Row label="Applicant">{p.applicant}</Row>
             <Row label="Developer">{p.developer}</Row>
             <Row label="Owner">{p.owner}</Row>
-            <Row label="Email">
-              {p.contact_email ? <a href={`mailto:${p.contact_email}`}>{p.contact_email}</a> : null}
-            </Row>
-            <Row label="Phone">
-              {p.contact_phone ? <a href={`tel:${p.contact_phone}`}>{p.contact_phone}</a> : null}
-            </Row>
           </tbody>
         </table>
-        {!p.applicant && !p.developer && !p.owner && !p.contact_email && !p.contact_phone && (
-          <div style={{ color: '#999', fontSize: 13 }}>Not listed</div>
+        {!p.applicant && !p.developer && !p.owner && (
+          <div style={{ color: '#999', fontSize: 13, marginBottom: 8 }}>No parties listed</div>
         )}
+
+        <div style={{ marginTop: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <label style={{ display: 'block', fontSize: 12, color: '#888', marginBottom: 4 }}>
+              Email {p.contact_email && !p.manual_contact_email ? '(auto-detected)' : p.manual_contact_email ? '(your entry)' : ''}
+            </label>
+            <span style={{ fontSize: 12, color: '#999' }}>
+              {saveState === 'saving' && 'Saving...'}
+              {saveState === 'saved' && 'Saved'}
+              {saveState === 'error' && 'Failed to save — try again'}
+            </span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+            <input
+              type="email"
+              value={contactEmail}
+              onChange={(e) => setContactEmail(e.target.value)}
+              onBlur={handleContactEmailBlur}
+              placeholder="Add an email address..."
+              style={{
+                flex: 1,
+                padding: '6px 10px',
+                borderRadius: 6,
+                border: '1px solid #ccc',
+                fontSize: 14,
+                boxSizing: 'border-box',
+              }}
+            />
+            {contactEmail && <a href={`mailto:${contactEmail}`}>✉️</a>}
+          </div>
+
+          <label style={{ display: 'block', fontSize: 12, color: '#888', marginBottom: 4 }}>
+            Phone {p.contact_phone && !p.manual_contact_phone ? '(auto-detected)' : p.manual_contact_phone ? '(your entry)' : ''}
+          </label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <input
+              type="tel"
+              value={contactPhone}
+              onChange={(e) => setContactPhone(e.target.value)}
+              onBlur={handleContactPhoneBlur}
+              placeholder="Add a phone number..."
+              style={{
+                flex: 1,
+                padding: '6px 10px',
+                borderRadius: 6,
+                border: '1px solid #ccc',
+                fontSize: 14,
+                boxSizing: 'border-box',
+              }}
+            />
+            {contactPhone && <a href={`tel:${contactPhone}`}>📞</a>}
+          </div>
+        </div>
       </Section>
 
       <Section title="Project Details">

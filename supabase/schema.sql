@@ -29,6 +29,14 @@ create table if not exists rezoning_projects (
   owner text,
   contact_email text,                 -- opportunistically extracted from applicant/developer/owner/description text — see scrapers/lib/contact.js
   contact_phone text,
+  -- Manual overrides — set by you in the app when auto-extraction finds nothing (or
+  -- finds something wrong). Kept in SEPARATE columns from contact_email/contact_phone
+  -- above rather than editing those directly: scrapers overwrite contact_email/
+  -- contact_phone on every run, which would silently wipe out a manual entry the next
+  -- time that town gets re-scraped. The app displays manual_contact_email if present,
+  -- falling back to contact_email otherwise — see src/components/ProjectDetail.jsx.
+  manual_contact_email text,
+  manual_contact_phone text,
 
   -- status
   status text,                        -- "Pending", "Approved - Commission", "Continued", etc.
@@ -76,7 +84,7 @@ create policy "Public can update lead tracking fields"
   using (true)
   with check (true);
 
-grant update (lead_status, lead_notes) on rezoning_projects to anon;
+grant update (lead_status, lead_notes, manual_contact_email, manual_contact_phone) on rezoning_projects to anon;
 
 -- MIGRATION for existing databases (e.g. the live production table): "create table if
 -- not exists" above won't add new columns to a table that already exists. Run this too
@@ -93,3 +101,9 @@ alter table rezoning_projects add column if not exists lead_notes text;
 -- existed before this feature was added.
 alter table rezoning_projects add column if not exists contact_email text;
 alter table rezoning_projects add column if not exists contact_phone text;
+
+-- MIGRATION for manual contact overrides (2026-08-18): run this plus the updated grant
+-- above if your table already existed before this feature was added.
+alter table rezoning_projects add column if not exists manual_contact_email text;
+alter table rezoning_projects add column if not exists manual_contact_phone text;
+grant update (manual_contact_email, manual_contact_phone) on rezoning_projects to anon;

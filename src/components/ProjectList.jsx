@@ -53,7 +53,7 @@ export default function ProjectList({ projects, loading, error, onSelect }) {
                   {p.lead_status}
                 </span>
               )}
-              {(p.contact_email || p.contact_phone) && (
+              {(p.contact_email || p.contact_phone || p.manual_contact_email || p.manual_contact_phone) && (
                 <span title="Contact info available" style={{ fontSize: 13 }}>
                   ✉️
                 </span>
