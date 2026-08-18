@@ -24,7 +24,7 @@ export default function ProjectList({ projects, loading, error, onSelect }) {
           >
             <div style={{ fontWeight: 600 }}>{p.name}</div>
             <div style={{ fontSize: 13, color: '#666' }}>
-              {p.municipality} · {p.address}
+              {p.municipality} · {p.manual_address || p.address}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
               <span

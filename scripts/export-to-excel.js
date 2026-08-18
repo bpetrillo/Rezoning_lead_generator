@@ -26,16 +26,20 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const OUTPUT_PATH = path.join(__dirname, '..', 'backups', 'rezoning_projects.xlsx')
 
 // Column order chosen for readability when browsing in Excel — most useful fields
-// first, technical/bookkeeping fields last. Must match real column names in
-// supabase/schema.sql.
-const COLUMNS = [
+// first, technical/bookkeeping fields last. This is a PREFERRED order, not an
+// exhaustive whitelist — buildColumns() below automatically appends any column that
+// shows up in the actual data but isn't listed here, so a future schema change (a new
+// editable field, say) doesn't silently vanish from the backup just because someone
+// forgot to update this list by hand.
+const PREFERRED_COLUMNS = [
   { key: 'name', header: 'Name', width: 32 },
   { key: 'municipality', header: 'Municipality', width: 14 },
   { key: 'project_type', header: 'Type', width: 16 },
   { key: 'status', header: 'Status', width: 18 },
   { key: 'lead_status', header: 'My Pipeline', width: 14 },
   { key: 'lead_notes', header: 'My Notes', width: 30 },
-  { key: 'address', header: 'Address', width: 32 },
+  { key: 'address', header: 'Address (auto)', width: 32 },
+  { key: 'manual_address', header: 'Address (manual)', width: 32 },
   { key: 'applicant', header: 'Applicant', width: 24 },
   { key: 'developer', header: 'Developer', width: 20 },
   { key: 'owner', header: 'Owner', width: 20 },
@@ -60,6 +64,40 @@ const COLUMNS = [
   { key: 'last_scraped_at', header: 'Last Scraped', width: 20 },
   { key: 'id', header: 'Internal ID', width: 38 },
 ]
+
+/** Turns "some_new_field" into "Some New Field" for an auto-generated column header. */
+function humanizeKey(key) {
+  return key
+    .split('_')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+}
+
+/**
+ * Builds the final column list: PREFERRED_COLUMNS in their curated order, followed by
+ * any keys found in the actual fetched rows that aren't already covered — so a new
+ * column added to the database later shows up automatically (with a readable
+ * auto-generated header) instead of silently disappearing from the backup.
+ */
+function buildColumns(rows) {
+  const knownKeys = new Set(PREFERRED_COLUMNS.map((c) => c.key))
+  const allKeysInData = new Set()
+  for (const row of rows) {
+    for (const key of Object.keys(row)) allKeysInData.add(key)
+  }
+  const extraColumns = [...allKeysInData]
+    .filter((key) => !knownKeys.has(key))
+    .sort()
+    .map((key) => ({ key, header: humanizeKey(key), width: 20 }))
+
+  if (extraColumns.length) {
+    console.log(
+      `Found ${extraColumns.length} column(s) not in the preferred list, appending automatically: ${extraColumns.map((c) => c.key).join(', ')}`
+    )
+  }
+
+  return [...PREFERRED_COLUMNS, ...extraColumns]
+}
 
 async function fetchAllRows() {
   const pageSize = 1000
@@ -96,13 +134,14 @@ async function main() {
   workbook.created = new Date()
 
   const sheet = workbook.addWorksheet('All Projects')
-  sheet.columns = COLUMNS
+  const columns = buildColumns(rows)
+  sheet.columns = columns
 
   // Bold, frozen header row + basic filter dropdown — standard Excel-file niceties so
   // this is pleasant to actually browse, not just a raw data dump.
   sheet.getRow(1).font = { bold: true }
   sheet.views = [{ state: 'frozen', ySplit: 1 }]
-  sheet.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: COLUMNS.length } }
+  sheet.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: columns.length } }
 
   for (const row of rows) {
     sheet.addRow(row)

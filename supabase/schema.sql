@@ -12,6 +12,10 @@ create table if not exists rezoning_projects (
   -- location
   municipality text,                  -- "Charlotte", "Mint Hill", "Matthews", etc.
   address text,
+  -- Manual override — same pattern as manual_contact_email/manual_contact_phone below:
+  -- set by you in the app when a scraped address is missing or wrong. Kept separate
+  -- from `address` since scrapers overwrite that column on every re-run.
+  manual_address text,
   parcel_id text,
   latitude double precision,
   longitude double precision,
@@ -84,7 +88,7 @@ create policy "Public can update lead tracking fields"
   using (true)
   with check (true);
 
-grant update (lead_status, lead_notes, manual_contact_email, manual_contact_phone) on rezoning_projects to anon;
+grant update (lead_status, lead_notes, manual_contact_email, manual_contact_phone, manual_address) on rezoning_projects to anon;
 
 -- MIGRATION for existing databases (e.g. the live production table): "create table if
 -- not exists" above won't add new columns to a table that already exists. Run this too
@@ -107,3 +111,8 @@ alter table rezoning_projects add column if not exists contact_phone text;
 alter table rezoning_projects add column if not exists manual_contact_email text;
 alter table rezoning_projects add column if not exists manual_contact_phone text;
 grant update (manual_contact_email, manual_contact_phone) on rezoning_projects to anon;
+
+-- MIGRATION for manual address override (2026-08-19): run this plus the updated grant
+-- above if your table already existed before this feature was added.
+alter table rezoning_projects add column if not exists manual_address text;
+grant update (manual_address) on rezoning_projects to anon;

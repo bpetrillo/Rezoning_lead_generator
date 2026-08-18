@@ -43,6 +43,7 @@ export default function ProjectDetail({ project: p, onBack, onUpdate }) {
   // would silently erase a manual entry. See schema.sql for the full reasoning.
   const [contactEmail, setContactEmail] = useState(p.manual_contact_email || p.contact_email || '')
   const [contactPhone, setContactPhone] = useState(p.manual_contact_phone || p.contact_phone || '')
+  const [address, setAddress] = useState(p.manual_address || p.address || '')
   const [saveState, setSaveState] = useState('idle') // 'idle' | 'saving' | 'saved' | 'error'
 
   useEffect(() => {
@@ -50,6 +51,7 @@ export default function ProjectDetail({ project: p, onBack, onUpdate }) {
     setLeadNotes(p.lead_notes || '')
     setContactEmail(p.manual_contact_email || p.contact_email || '')
     setContactPhone(p.manual_contact_phone || p.contact_phone || '')
+    setAddress(p.manual_address || p.address || '')
     setSaveState('idle')
   }, [p.id])
 
@@ -86,6 +88,13 @@ export default function ProjectDetail({ project: p, onBack, onUpdate }) {
     const effectiveCurrent = p.manual_contact_phone || p.contact_phone || ''
     if (contactPhone !== effectiveCurrent) {
       saveField({ manual_contact_phone: contactPhone || null })
+    }
+  }
+
+  function handleAddressBlur() {
+    const effectiveCurrent = p.manual_address || p.address || ''
+    if (address !== effectiveCurrent) {
+      saveField({ manual_address: address || null })
     }
   }
 
@@ -255,11 +264,40 @@ export default function ProjectDetail({ project: p, onBack, onUpdate }) {
       </Section>
 
       <Section title="Location">
-        <div style={{ marginBottom: 8, color: '#333' }}>
-          📍 {p.address ? `${p.address}, ` : ''}
-          {p.municipality}, NC
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <label style={{ display: 'block', fontSize: 12, color: '#888', marginBottom: 4 }}>
+            Address {p.address && !p.manual_address ? '(auto-detected)' : p.manual_address ? '(your entry)' : ''}
+          </label>
+          <span style={{ fontSize: 12, color: '#999' }}>
+            {saveState === 'saving' && 'Saving...'}
+            {saveState === 'saved' && 'Saved'}
+            {saveState === 'error' && 'Failed to save — try again'}
+          </span>
         </div>
+        <input
+          type="text"
+          value={address}
+          onChange={(e) => setAddress(e.target.value)}
+          onBlur={handleAddressBlur}
+          placeholder="Add an address..."
+          style={{
+            width: '100%',
+            padding: '6px 10px',
+            borderRadius: 6,
+            border: '1px solid #ccc',
+            fontSize: 14,
+            marginBottom: 8,
+            boxSizing: 'border-box',
+          }}
+        />
+        <div style={{ marginBottom: 8, color: '#333' }}>{p.municipality}, NC</div>
         <MiniMap project={p} />
+        {p.manual_address && (
+          <div style={{ fontSize: 12, color: '#999', marginTop: 6 }}>
+            Note: editing the address text doesn't move the pin above — that's based on
+            stored coordinates, not this text.
+          </div>
+        )}
       </Section>
 
       <Section title="Source">

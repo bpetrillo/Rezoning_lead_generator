@@ -85,7 +85,7 @@ export default function App() {
         return false
       if (filters.search) {
         const q = filters.search.toLowerCase()
-        const haystack = `${p.name} ${p.address} ${p.applicant} ${p.parcel_id}`.toLowerCase()
+        const haystack = `${p.name} ${p.address} ${p.manual_address} ${p.applicant} ${p.parcel_id}`.toLowerCase()
         if (!haystack.includes(q)) return false
       }
       return true
