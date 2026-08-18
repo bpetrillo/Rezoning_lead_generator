@@ -53,6 +53,11 @@ export default function ProjectList({ projects, loading, error, onSelect }) {
                   {p.lead_status}
                 </span>
               )}
+              {(p.contact_email || p.contact_phone) && (
+                <span title="Contact info available" style={{ fontSize: 13 }}>
+                  ✉️
+                </span>
+              )}
               <span style={{ fontSize: 12, color: '#888' }}>
                 {p.status} {p.last_action_date ? `· ${p.last_action_date}` : ''}
               </span>

@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { deriveContactInfo } from './contact.js'
 import 'dotenv/config'
 
 // IMPORTANT: scrapers run server-side (GitHub Actions / your own machine) and use the
@@ -33,8 +34,14 @@ export async function upsertProjects(records) {
     return
   }
 
+  // Derive contact_email/contact_phone here — centrally, once — rather than editing
+  // each of the 7 scraper files individually. Automatically covers any town whose
+  // scraped text happens to include contact info, not just the one confirmed case
+  // (Davidson). See scrapers/lib/contact.js for details.
+  const withContactInfo = records.map((r) => ({ ...r, ...deriveContactInfo(r) }))
+
   const seen = new Map() // key -> count
-  const deduped = records.map((r) => {
+  const deduped = withContactInfo.map((r) => {
     const key = `${r.source}::${r.source_id}`
     const count = seen.get(key) || 0
     seen.set(key, count + 1)

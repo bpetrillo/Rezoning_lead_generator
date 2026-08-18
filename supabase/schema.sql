@@ -27,6 +27,8 @@ create table if not exists rezoning_projects (
   applicant text,
   developer text,
   owner text,
+  contact_email text,                 -- opportunistically extracted from applicant/developer/owner/description text — see scrapers/lib/contact.js
+  contact_phone text,
 
   -- status
   status text,                        -- "Pending", "Approved - Commission", "Continued", etc.
@@ -86,3 +88,8 @@ alter table rezoning_projects add column if not exists current_zoning text;
 -- your table already existed before this feature was added.
 alter table rezoning_projects add column if not exists lead_status text;
 alter table rezoning_projects add column if not exists lead_notes text;
+
+-- MIGRATION for contact info extraction (2026-08-16): run this if your table already
+-- existed before this feature was added.
+alter table rezoning_projects add column if not exists contact_email text;
+alter table rezoning_projects add column if not exists contact_phone text;

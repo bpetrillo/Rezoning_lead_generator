@@ -152,9 +152,15 @@ export default function ProjectDetail({ project: p, onBack, onUpdate }) {
             <Row label="Applicant">{p.applicant}</Row>
             <Row label="Developer">{p.developer}</Row>
             <Row label="Owner">{p.owner}</Row>
+            <Row label="Email">
+              {p.contact_email ? <a href={`mailto:${p.contact_email}`}>{p.contact_email}</a> : null}
+            </Row>
+            <Row label="Phone">
+              {p.contact_phone ? <a href={`tel:${p.contact_phone}`}>{p.contact_phone}</a> : null}
+            </Row>
           </tbody>
         </table>
-        {!p.applicant && !p.developer && !p.owner && (
+        {!p.applicant && !p.developer && !p.owner && !p.contact_email && !p.contact_phone && (
           <div style={{ color: '#999', fontSize: 13 }}>Not listed</div>
         )}
       </Section>
