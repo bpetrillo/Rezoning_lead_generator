@@ -21,14 +21,36 @@ export default function App() {
     let isMounted = true
     async function load() {
       setLoading(true)
-      const { data, error } = await supabase
-        .from('rezoning_projects')
-        .select('*')
-        .order('last_action_date', { ascending: false })
-        .limit(500)
+      // Supabase caps a single query at 1000 rows regardless of .limit() — the old
+      // code here had a hardcoded .limit(500), which silently dropped every row past
+      // the 500th once the real dataset grew past that (1399 rows as of writing,
+      // across all 7 towns). Paginates through in batches of 1000 instead, same
+      // approach already proven working in scripts/export-to-excel.js, so this won't
+      // silently truncate again as more data comes in over time.
+      const pageSize = 1000
+      let from = 0
+      const allRows = []
+      let fetchError = null
+
+      while (true) {
+        const { data, error } = await supabase
+          .from('rezoning_projects')
+          .select('*')
+          .order('last_action_date', { ascending: false })
+          .range(from, from + pageSize - 1)
+
+        if (error) {
+          fetchError = error
+          break
+        }
+        allRows.push(...data)
+        if (data.length < pageSize) break
+        from += pageSize
+      }
+
       if (!isMounted) return
-      if (error) setError(error.message)
-      else setProjects(data ?? [])
+      if (fetchError) setError(fetchError.message)
+      else setProjects(allRows)
       setLoading(false)
     }
     load()
