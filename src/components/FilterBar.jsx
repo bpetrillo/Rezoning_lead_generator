@@ -59,6 +59,30 @@ export default function FilterBar({
           </option>
         ))}
       </select>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}>
+        <label style={{ fontSize: 13, color: '#666' }}>Last action:</label>
+        <input
+          type="date"
+          value={filters.dateFrom}
+          onChange={(e) => setFilters((f) => ({ ...f, dateFrom: e.target.value }))}
+          style={{ padding: '6px 8px', border: '1px solid #ccc', borderRadius: 6 }}
+        />
+        <span style={{ color: '#999' }}>–</span>
+        <input
+          type="date"
+          value={filters.dateTo}
+          onChange={(e) => setFilters((f) => ({ ...f, dateTo: e.target.value }))}
+          style={{ padding: '6px 8px', border: '1px solid #ccc', borderRadius: 6 }}
+        />
+        {(filters.dateFrom || filters.dateTo) && (
+          <button
+            onClick={() => setFilters((f) => ({ ...f, dateFrom: '', dateTo: '' }))}
+            style={{ padding: '4px 8px', fontSize: 12, cursor: 'pointer', border: '1px solid #ccc', borderRadius: 6, background: 'white' }}
+          >
+            Clear
+          </button>
+        )}
+      </div>
       <span style={{ color: '#666', fontSize: 14, whiteSpace: 'nowrap' }}>{resultCount} projects</span>
     </div>
   )

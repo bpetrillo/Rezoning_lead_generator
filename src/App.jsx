@@ -15,6 +15,8 @@ export default function App() {
     projectType: 'all',
     leadStatus: 'all',
     search: '',
+    dateFrom: '',
+    dateTo: '',
   })
 
   useEffect(() => {
@@ -83,6 +85,8 @@ export default function App() {
         p.lead_status !== filters.leadStatus
       )
         return false
+      if (filters.dateFrom && (!p.last_action_date || p.last_action_date < filters.dateFrom)) return false
+      if (filters.dateTo && (!p.last_action_date || p.last_action_date > filters.dateTo)) return false
       if (filters.search) {
         const q = filters.search.toLowerCase()
         const haystack = `${p.name} ${p.address} ${p.manual_address} ${p.applicant} ${p.parcel_id}`.toLowerCase()
