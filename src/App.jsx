@@ -4,8 +4,10 @@ import MapView from './components/MapView.jsx'
 import FilterBar from './components/FilterBar.jsx'
 import ProjectList from './components/ProjectList.jsx'
 import ProjectDetail from './components/ProjectDetail.jsx'
+import Directory from './components/Directory.jsx'
 
 export default function App() {
+  const [view, setView] = useState('map') // 'map' | 'directory'
   const [projects, setProjects] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -104,33 +106,63 @@ export default function App() {
     setSelected((prev) => (prev && prev.id === id ? { ...prev, ...patch } : prev))
   }
 
+  // Clicking a party in the Directory switches back to the map view with the search
+  // filter set to their name — an easy way to see everything a specific person/company
+  // is tied to, without needing a second, separate filtering system just for Directory.
+  function handleSelectParty(name) {
+    setFilters((f) => ({ ...f, search: name }))
+    setSelected(null)
+    setView('map')
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', fontFamily: 'system-ui, sans-serif' }}>
-      <FilterBar
-        filters={filters}
-        setFilters={setFilters}
-        municipalities={municipalities}
-        projectTypes={projectTypes}
-        leadStatuses={leadStatuses}
-        resultCount={filtered.length}
-      />
-      <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
-        <div style={{ flex: 1.4, minWidth: 0 }}>
-          <MapView projects={filtered} selected={selected} onSelect={setSelected} />
-        </div>
-        <div style={{ width: 380, borderLeft: '1px solid #e2e2e2', overflowY: 'auto' }}>
-          {selected ? (
-            <ProjectDetail project={selected} onBack={() => setSelected(null)} onUpdate={handleProjectUpdate} />
-          ) : (
-            <ProjectList
-              projects={filtered}
-              loading={loading}
-              error={error}
-              onSelect={setSelected}
-            />
-          )}
-        </div>
+      <div style={{ display: 'flex', gap: 4, padding: '8px 16px 0', borderBottom: '1px solid #e2e2e2' }}>
+        {['map', 'directory'].map((v) => (
+          <button
+            key={v}
+            onClick={() => setView(v)}
+            style={{
+              padding: '8px 16px',
+              border: 'none',
+              borderBottom: view === v ? '2px solid #333' : '2px solid transparent',
+              background: 'none',
+              fontWeight: view === v ? 600 : 400,
+              cursor: 'pointer',
+              textTransform: 'capitalize',
+            }}
+          >
+            {v}
+          </button>
+        ))}
       </div>
+
+      {view === 'directory' ? (
+        <Directory projects={projects} onSelectParty={handleSelectParty} />
+      ) : (
+        <>
+          <FilterBar
+            filters={filters}
+            setFilters={setFilters}
+            municipalities={municipalities}
+            projectTypes={projectTypes}
+            leadStatuses={leadStatuses}
+            resultCount={filtered.length}
+          />
+          <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
+            <div style={{ flex: 1.4, minWidth: 0 }}>
+              <MapView projects={filtered} selected={selected} onSelect={setSelected} />
+            </div>
+            <div style={{ width: 380, borderLeft: '1px solid #e2e2e2', overflowY: 'auto' }}>
+              {selected ? (
+                <ProjectDetail project={selected} onBack={() => setSelected(null)} onUpdate={handleProjectUpdate} />
+              ) : (
+                <ProjectList projects={filtered} loading={loading} error={error} onSelect={setSelected} />
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }
