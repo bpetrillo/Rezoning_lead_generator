@@ -1,6 +1,22 @@
 import { useMemo, useState } from 'react'
 import { buildDirectory } from '../lib/directory.js'
 
+/**
+ * "Last seen" mixes two different source formats: last_action_date (a plain date,
+ * e.g. "2025-09-15") and last_scraped_at (a full timestamp, e.g.
+ * "2026-08-18T19:07:56.914+00:00") used as a fallback when the former is missing.
+ * Normalizes both to a short MM/DD/YYYY display regardless of which one it is.
+ */
+function formatShortDate(value) {
+  if (!value) return null
+  const date = new Date(value)
+  if (isNaN(date.getTime())) return value // fall back to raw value rather than hide it
+  const mm = String(date.getUTCMonth() + 1).padStart(2, '0')
+  const dd = String(date.getUTCDate()).padStart(2, '0')
+  const yyyy = date.getUTCFullYear()
+  return `${mm}/${dd}/${yyyy}`
+}
+
 function downloadCsv(rows) {
   const headers = ['Name', 'Type', 'Roles', 'Projects', 'Locations', 'Project Types', 'Last Seen', 'Email', 'Phone']
   const escapeCsvCell = (val) => `"${String(val ?? '').replace(/"/g, '""')}"`
@@ -14,7 +30,7 @@ function downloadCsv(rows) {
         r.projectCount,
         r.municipalities.join('; '),
         r.projectTypes.join('; '),
-        r.lastSeen || '',
+        formatShortDate(r.lastSeen) || '',
         r.contactEmail || '',
         r.contactPhone || '',
       ]
@@ -151,7 +167,7 @@ export default function Directory({ projects, onSelectParty }) {
                     <span style={{ fontSize: 12, color: '#999' }}>+{d.projectTypes.length - 2}</span>
                   ) : null}
                 </td>
-                <td style={{ padding: '10px 16px', color: '#666' }}>{d.lastSeen || '—'}</td>
+                <td style={{ padding: '10px 16px', color: '#666' }}>{formatShortDate(d.lastSeen) || '—'}</td>
                 <td style={{ padding: '10px 16px' }}>
                   {d.contactEmail && (
                     <a href={`mailto:${d.contactEmail}`} onClick={(e) => e.stopPropagation()} style={{ marginRight: 8 }}>
