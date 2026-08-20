@@ -5,6 +5,7 @@ import FilterBar from './components/FilterBar.jsx'
 import ProjectList from './components/ProjectList.jsx'
 import ProjectDetail from './components/ProjectDetail.jsx'
 import Directory from './components/Directory.jsx'
+import PartyDetail from './components/PartyDetail.jsx'
 
 export default function App() {
   const [view, setView] = useState('map') // 'map' | 'directory'
@@ -12,6 +13,7 @@ export default function App() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [selected, setSelected] = useState(null)
+  const [selectedParty, setSelectedParty] = useState(null) // name of party being viewed in Directory
   const [filters, setFilters] = useState({
     municipality: 'all',
     projectType: 'all',
@@ -106,13 +108,20 @@ export default function App() {
     setSelected((prev) => (prev && prev.id === id ? { ...prev, ...patch } : prev))
   }
 
-  // Clicking a party in the Directory switches back to the map view with the search
-  // filter set to their name — an easy way to see everything a specific person/company
-  // is tied to, without needing a second, separate filtering system just for Directory.
+  // Clicking a party in the Directory opens their dedicated profile page (contact info,
+  // real "worked with" connections, full project list) rather than just filtering the
+  // map — this also handles clicking a name inside "Worked With" to navigate between
+  // party profiles directly.
   function handleSelectParty(name) {
-    setFilters((f) => ({ ...f, search: name }))
-    setSelected(null)
+    setSelectedParty(name)
+  }
+
+  // Clicking a project from within a party's profile jumps to the map with that exact
+  // project already open in the detail panel.
+  function handleSelectProjectFromParty(project) {
     setView('map')
+    setSelected(project)
+    setSelectedParty(null)
   }
 
   return (
@@ -121,7 +130,10 @@ export default function App() {
         {['map', 'directory'].map((v) => (
           <button
             key={v}
-            onClick={() => setView(v)}
+            onClick={() => {
+              setView(v)
+              setSelectedParty(null)
+            }}
             style={{
               padding: '8px 16px',
               border: 'none',
@@ -138,7 +150,17 @@ export default function App() {
       </div>
 
       {view === 'directory' ? (
-        <Directory projects={projects} onSelectParty={handleSelectParty} />
+        selectedParty ? (
+          <PartyDetail
+            partyName={selectedParty}
+            projects={projects}
+            onBack={() => setSelectedParty(null)}
+            onSelectProject={handleSelectProjectFromParty}
+            onSelectParty={setSelectedParty}
+          />
+        ) : (
+          <Directory projects={projects} onSelectParty={handleSelectParty} />
+        )
       ) : (
         <>
           <FilterBar
