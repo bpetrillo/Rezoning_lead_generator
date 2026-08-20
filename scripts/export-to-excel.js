@@ -21,6 +21,7 @@ import ExcelJS from 'exceljs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { supabaseAdmin } from '../scrapers/lib/upsert.js'
+import { getTypeLabel } from '../src/lib/typeColors.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const OUTPUT_PATH = path.join(__dirname, '..', 'backups', 'rezoning_projects.xlsx')
@@ -145,7 +146,10 @@ async function main() {
   sheet.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: columns.length } }
 
   for (const row of rows) {
-    sheet.addRow(row)
+    // Same "Uncategorized" label the app itself shows for a blank project_type
+    // (src/lib/typeColors.js) — keeps the Excel backup consistent with what you see on
+    // the live site rather than just leaving these cells empty.
+    sheet.addRow({ ...row, project_type: getTypeLabel(row.project_type) })
   }
 
   // Also add a small "Summary" sheet — quick counts per municipality, useful at a
