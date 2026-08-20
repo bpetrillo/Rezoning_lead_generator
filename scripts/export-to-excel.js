@@ -43,6 +43,7 @@ const PREFERRED_COLUMNS = [
   { key: 'applicant', header: 'Applicant', width: 24 },
   { key: 'developer', header: 'Developer', width: 20 },
   { key: 'owner', header: 'Owner', width: 20 },
+  { key: 'owner_mailing_address', header: 'Owner Mailing Address', width: 32 },
   { key: 'contact_email', header: 'Email (auto)', width: 26 },
   { key: 'manual_contact_email', header: 'Email (manual)', width: 26 },
   { key: 'contact_phone', header: 'Phone (auto)', width: 16 },

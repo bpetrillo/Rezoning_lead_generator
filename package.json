@@ -14,7 +14,8 @@
     "scrape:huntersville": "node scrapers/huntersville/index.js",
     "scrape:cornelius": "node scrapers/cornelius/index.js",
     "scrape:davidson": "node scrapers/davidson/index.js",
-    "export:excel": "node scripts/export-to-excel.js"
+    "export:excel": "node scripts/export-to-excel.js",
+    "enrich:owners": "node scripts/enrich-owner-info.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",

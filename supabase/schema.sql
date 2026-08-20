@@ -31,6 +31,7 @@ create table if not exists rezoning_projects (
   applicant text,
   developer text,
   owner text,
+  owner_mailing_address text,         -- from Mecklenburg County's public Polaris parcel records — see scripts/enrich-owner-info.js
   contact_email text,                 -- opportunistically extracted from applicant/developer/owner/description text — see scrapers/lib/contact.js
   contact_phone text,
   -- Manual overrides — set by you in the app when auto-extraction finds nothing (or
@@ -116,3 +117,7 @@ grant update (manual_contact_email, manual_contact_phone) on rezoning_projects t
 -- above if your table already existed before this feature was added.
 alter table rezoning_projects add column if not exists manual_address text;
 grant update (manual_address) on rezoning_projects to anon;
+
+-- MIGRATION for owner enrichment (2026-08-21): run this if your table already existed
+-- before this feature was added.
+alter table rezoning_projects add column if not exists owner_mailing_address text;

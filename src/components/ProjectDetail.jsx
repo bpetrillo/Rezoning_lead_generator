@@ -184,6 +184,7 @@ export default function ProjectDetail({ project: p, onBack, onUpdate }) {
             <Row label="Applicant">{p.applicant}</Row>
             <Row label="Developer">{p.developer}</Row>
             <Row label="Owner">{p.owner}</Row>
+            <Row label="Owner Mailing Address">{p.owner_mailing_address}</Row>
           </tbody>
         </table>
         {!p.applicant && !p.developer && !p.owner && (
