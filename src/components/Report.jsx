@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import {
   projectCategoryBreakdown,
   municipalityBreakdown,
-  statusBreakdown,
+  applicationTypeBreakdown,
   pipelineBreakdown,
   projectSizeBreakdown,
   getCategoryLabel,
@@ -113,7 +113,7 @@ export default function Report({ projects, onSelectParty }) {
     return projects.filter((p) => {
       if (dimension === 'category') return getCategoryLabel(p) === value
       if (dimension === 'municipality') return p.municipality === value
-      if (dimension === 'status') return p.status === value
+      if (dimension === 'applicationType') return (p.request_type || 'Not specified') === value
       if (dimension === 'pipeline') return (p.lead_status || 'Not tracked') === value
       if (dimension === 'size') return getSizeLabel(p) === value
       return true
@@ -122,7 +122,7 @@ export default function Report({ projects, onSelectParty }) {
 
   const categorySegments = useMemo(() => projectCategoryBreakdown(filtered), [filtered])
   const municipalitySegments = useMemo(() => municipalityBreakdown(filtered), [filtered])
-  const statusSegments = useMemo(() => statusBreakdown(filtered), [filtered])
+  const applicationTypeSegments = useMemo(() => applicationTypeBreakdown(filtered), [filtered])
   const pipelineSegments = useMemo(() => pipelineBreakdown(filtered), [filtered])
   const sizeSegments = useMemo(() => projectSizeBreakdown(filtered), [filtered])
 
@@ -169,9 +169,9 @@ export default function Report({ projects, onSelectParty }) {
       />
 
       <BreakdownSection
-        title="Status"
-        segments={statusSegments}
-        dimension="status"
+        title="Application Type"
+        segments={applicationTypeSegments}
+        dimension="applicationType"
         activeFilter={activeFilter}
         onSelect={handleSelect}
       />

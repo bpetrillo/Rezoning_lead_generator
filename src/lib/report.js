@@ -47,8 +47,14 @@ export function municipalityBreakdown(projects) {
   return computeBreakdown(projects, { getKey: (p) => p.municipality })
 }
 
-export function statusBreakdown(projects) {
-  return computeBreakdown(projects, { getKey: (p) => p.status })
+export function applicationTypeBreakdown(projects) {
+  // Honest limitation: unlike Boardwalk's example (Rezone, Spot Rezoning, Area
+  // Rezoning, Conditional Use Permit, Annexation, etc.), our request_type field is
+  // much flatter — most scrapers only ever set it to "Rezoning" (or leave it blank for
+  // Davidson/Pineville, which don't use rezoning terminology at all). This will
+  // realistically show mostly two buckets, not a rich breakdown — that's a real
+  // reflection of what's actually captured, not a bug.
+  return computeBreakdown(projects, { getKey: (p) => p.request_type || 'Not specified' })
 }
 
 export function pipelineBreakdown(projects) {
