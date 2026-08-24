@@ -26,22 +26,10 @@
  */
 
 import { supabaseAdmin } from '../scrapers/lib/upsert.js'
-
-const POLARIS_BASE = 'https://polaris3g.mecklenburgcountync.gov/api/bolt'
-
-function extractParcelCandidates(rawParcelField) {
-  if (!rawParcelField) return []
-  return rawParcelField
-    .split(/,|&|\band\b/i)
-    .map((s) => s.replace(/[^0-9]/g, ''))
-    .filter((s) => s.length >= 6 && s.length <= 10)
-}
+import { extractParcelCandidates, fetchParcelRecord } from '../scrapers/lib/polaris.js'
 
 async function lookupOwner(parcelId) {
-  const res = await fetch(`${POLARIS_BASE}?pid=${parcelId}&page=1`)
-  if (!res.ok) return null
-  const data = await res.json()
-  const record = Array.isArray(data) ? data[0] : null
+  const record = await fetchParcelRecord(parcelId)
   if (!record?.owner?.length) return null
   return {
     ownerName: record.owner.map((o) => o.fullname).join('; '),
