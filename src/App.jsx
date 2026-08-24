@@ -7,10 +7,11 @@ import ProjectDetail from './components/ProjectDetail.jsx'
 import Directory from './components/Directory.jsx'
 import PartyDetail from './components/PartyDetail.jsx'
 import ProjectsTable from './components/ProjectsTable.jsx'
+import Report from './components/Report.jsx'
 import { parseAcreageNumber } from './lib/acreage.js'
 
 export default function App() {
-  const [view, setView] = useState('map') // 'map' | 'table' | 'directory'
+  const [view, setView] = useState('map') // 'map' | 'table' | 'report' | 'directory'
   const [projects, setProjects] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -110,12 +111,13 @@ export default function App() {
     setSelected((prev) => (prev && prev.id === id ? { ...prev, ...patch } : prev))
   }
 
-  // Clicking a party in the Directory opens their dedicated profile page (contact info,
-  // real "worked with" connections, full project list) rather than just filtering the
-  // map — this also handles clicking a name inside "Worked With" to navigate between
-  // party profiles directly.
+  // Clicking a party (from the Directory, from within a party's "Worked With" list, or
+  // from the Report's "Top Parties" drill-down) opens their dedicated profile page.
+  // Always switches to the Directory tab — a no-op if already there, but necessary when
+  // called from Report or elsewhere.
   function handleSelectParty(name) {
     setSelectedParty(name)
+    setView('directory')
   }
 
   // Clicking a project from within a party's profile jumps to the map with that exact
@@ -129,7 +131,7 @@ export default function App() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', fontFamily: 'system-ui, sans-serif' }}>
       <div style={{ display: 'flex', gap: 4, padding: '8px 16px 0', borderBottom: '1px solid #e2e2e2' }}>
-        {['map', 'table', 'directory'].map((v) => (
+        {['map', 'table', 'report', 'directory'].map((v) => (
           <button
             key={v}
             onClick={() => {
@@ -180,6 +182,14 @@ export default function App() {
               </div>
             ) : (
               <ProjectsTable projects={filtered} onSelectProject={setSelected} />
+            )
+          ) : view === 'report' ? (
+            selected ? (
+              <div style={{ flex: 1, overflowY: 'auto', maxWidth: 600 }}>
+                <ProjectDetail project={selected} onBack={() => setSelected(null)} onUpdate={handleProjectUpdate} />
+              </div>
+            ) : (
+              <Report projects={filtered} onSelectParty={handleSelectParty} />
             )
           ) : (
             <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
