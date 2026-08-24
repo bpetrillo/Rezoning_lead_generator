@@ -5,9 +5,11 @@ import {
   applicationTypeBreakdown,
   pipelineBreakdown,
   projectSizeBreakdown,
+  computeBreakdown,
   getCategoryLabel,
   getSizeLabel,
 } from '../lib/report.js'
+import { classifyAssetClass } from '../lib/assetClass.js'
 import { buildDirectory } from '../lib/directory.js'
 
 function PieChart({ segments, size = 120 }) {
@@ -126,6 +128,18 @@ export default function Report({ projects, onSelectParty }) {
   const pipelineSegments = useMemo(() => pipelineBreakdown(filtered), [filtered])
   const sizeSegments = useMemo(() => projectSizeBreakdown(filtered), [filtered])
 
+  // Asset Class drill-down — only shown when filtered by Project Category, matching
+  // the Boardwalk reference exactly (image 3: filtering "Commercial" reveals an
+  // "Asset Class — Commercial" breakdown right below it). Heuristic, same as the
+  // category classifier itself — see src/lib/assetClass.js for the full reasoning and
+  // real test cases it was validated against.
+  const assetClassSegments = useMemo(() => {
+    if (activeFilter?.dimension !== 'category') return []
+    return computeBreakdown(filtered, {
+      getKey: (p) => classifyAssetClass(activeFilter.value, { description: p.description }),
+    })
+  }, [filtered, activeFilter])
+
   // Drill-down detail, shown only when a filter is active — top parties within the
   // filtered subset. This substitutes for Boardwalk's "Asset Class" sub-taxonomy
   // drill-down, which needs data (property/asset subtype) that isn't in our scrapers
@@ -158,6 +172,16 @@ export default function Report({ projects, onSelectParty }) {
         onSelect={handleSelect}
         showPie
       />
+
+      {activeFilter?.dimension === 'category' && assetClassSegments.length > 0 && (
+        <BreakdownSection
+          title={`Asset Class — ${activeFilter.value}`}
+          segments={assetClassSegments}
+          dimension="assetClass"
+          activeFilter={null}
+          onSelect={() => {}}
+        />
+      )}
 
       <BreakdownSection
         title="Municipality"
