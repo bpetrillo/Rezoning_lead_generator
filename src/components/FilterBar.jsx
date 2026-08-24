@@ -1,3 +1,5 @@
+import { PROJECT_SORT_OPTIONS } from '../lib/sort.js'
+
 export default function FilterBar({
   filters,
   setFilters,
@@ -75,6 +77,17 @@ export default function FilterBar({
           </button>
         )}
       </div>
+      <select
+        className="select"
+        value={filters.sortBy}
+        onChange={(e) => setFilters((f) => ({ ...f, sortBy: e.target.value }))}
+      >
+        {PROJECT_SORT_OPTIONS.map((o) => (
+          <option key={o.value} value={o.value}>
+            Sort: {o.label}
+          </option>
+        ))}
+      </select>
       <span style={{ color: 'var(--text-muted)', fontSize: 14, whiteSpace: 'nowrap', marginLeft: 'auto' }}>
         {resultCount.toLocaleString()} projects
       </span>

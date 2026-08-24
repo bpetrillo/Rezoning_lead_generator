@@ -9,6 +9,7 @@ import PartyDetail from './components/PartyDetail.jsx'
 import ProjectsTable from './components/ProjectsTable.jsx'
 import Report from './components/Report.jsx'
 import { parseAcreageNumber } from './lib/acreage.js'
+import { sortByValue, PROJECT_SORT_OPTIONS } from './lib/sort.js'
 
 export default function App() {
   const [view, setView] = useState('map') // 'map' | 'table' | 'report' | 'directory'
@@ -24,6 +25,7 @@ export default function App() {
     search: '',
     dateFrom: '',
     dateTo: '',
+    sortBy: 'recent',
   })
 
   useEffect(() => {
@@ -103,6 +105,11 @@ export default function App() {
     })
   }, [projects, filters])
 
+  const sorted = useMemo(() => {
+    const option = PROJECT_SORT_OPTIONS.find((o) => o.value === filters.sortBy) || PROJECT_SORT_OPTIONS[0]
+    return sortByValue(filtered, option.getValue, option.direction)
+  }, [filtered, filters.sortBy])
+
   // Called by ProjectDetail after it successfully saves lead_status/lead_notes directly
   // to Supabase — keeps the in-memory list (and therefore the sidebar/badges) in sync
   // without needing a full refetch or page refresh.
@@ -165,7 +172,7 @@ export default function App() {
             municipalities={municipalities}
             projectTypes={projectTypes}
             leadStatuses={leadStatuses}
-            resultCount={filtered.length}
+            resultCount={sorted.length}
           />
           {view === 'table' ? (
             selected ? (
@@ -173,7 +180,7 @@ export default function App() {
                 <ProjectDetail project={selected} onBack={() => setSelected(null)} onUpdate={handleProjectUpdate} />
               </div>
             ) : (
-              <ProjectsTable projects={filtered} onSelectProject={setSelected} />
+              <ProjectsTable projects={sorted} onSelectProject={setSelected} />
             )
           ) : view === 'report' ? (
             selected ? (
@@ -181,18 +188,18 @@ export default function App() {
                 <ProjectDetail project={selected} onBack={() => setSelected(null)} onUpdate={handleProjectUpdate} />
               </div>
             ) : (
-              <Report projects={filtered} onSelectParty={handleSelectParty} />
+              <Report projects={sorted} onSelectParty={handleSelectParty} />
             )
           ) : (
             <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
               <div style={{ flex: 1.4, minWidth: 0 }}>
-                <MapView projects={filtered} selected={selected} onSelect={setSelected} />
+                <MapView projects={sorted} selected={selected} onSelect={setSelected} />
               </div>
               <div style={{ width: 380, borderLeft: '1px solid var(--border)', overflowY: 'auto' }} className="panel">
                 {selected ? (
                   <ProjectDetail project={selected} onBack={() => setSelected(null)} onUpdate={handleProjectUpdate} />
                 ) : (
-                  <ProjectList projects={filtered} loading={loading} error={error} onSelect={setSelected} />
+                  <ProjectList projects={sorted} loading={loading} error={error} onSelect={setSelected} />
                 )}
               </div>
             </div>

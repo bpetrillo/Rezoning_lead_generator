@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { getTypeColor, getTypeLabel } from '../lib/typeColors.js'
 import { formatShortDate } from '../lib/format.js'
 import { downloadCsv } from '../lib/csv.js'
+import { sortByValue } from '../lib/sort.js'
 
 const COLUMNS = [
   { key: 'name', label: 'Name', sortValue: (p) => p.name || '' },
@@ -51,18 +52,7 @@ export default function ProjectsTable({ projects, onSelectProject }) {
   const sorted = useMemo(() => {
     const column = COLUMNS.find((c) => c.key === sortKey)
     if (!column) return projects
-    const withValues = projects.map((p) => ({ p, v: column.sortValue(p) }))
-    withValues.sort((a, b) => {
-      // Nulls always sort last regardless of direction — a missing acreage or date
-      // shouldn't jump to the top just because you clicked "descending".
-      if (a.v == null && b.v == null) return 0
-      if (a.v == null) return 1
-      if (b.v == null) return -1
-      if (a.v < b.v) return sortDir === 'asc' ? -1 : 1
-      if (a.v > b.v) return sortDir === 'asc' ? 1 : -1
-      return 0
-    })
-    return withValues.map((x) => x.p)
+    return sortByValue(projects, column.sortValue, sortDir)
   }, [projects, sortKey, sortDir])
 
   return (
