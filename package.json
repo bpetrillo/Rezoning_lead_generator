@@ -16,7 +16,8 @@
     "scrape:davidson": "node scrapers/davidson/index.js",
     "export:excel": "node scripts/export-to-excel.js",
     "enrich:owners": "node scripts/enrich-owner-info.js",
-    "enrich:location": "node scripts/enrich-location-info.js"
+    "enrich:location": "node scripts/enrich-location-info.js",
+    "scrape:all": "node scripts/scrape-all.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
