@@ -8,32 +8,31 @@ const LEGEND_ITEMS = [
 export default function Legend() {
   return (
     <div
+      className="card"
       style={{
         position: 'absolute',
         bottom: 16,
         left: 16,
         zIndex: 1000,
-        background: 'white',
-        borderRadius: 8,
-        padding: '10px 12px',
-        boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
+        padding: '12px 14px',
         fontSize: 13,
-        lineHeight: 1.6,
+        lineHeight: 1.8,
+        boxShadow: 'var(--shadow-md)',
       }}
     >
       {LEGEND_ITEMS.map((item) => (
-        <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span
             style={{
               display: 'inline-block',
-              width: 10,
-              height: 10,
+              width: 9,
+              height: 9,
               borderRadius: '50%',
               backgroundColor: item.color,
               flexShrink: 0,
             }}
           />
-          <span>{item.label}</span>
+          <span style={{ color: 'var(--text)' }}>{item.label}</span>
         </div>
       ))}
     </div>

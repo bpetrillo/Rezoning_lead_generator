@@ -1,0 +1,346 @@
+/**
+ * Design system for the Mecklenburg Rezoning Tracker.
+ *
+ * Direction: a clean, confident civic-tech / modern SaaS feel for a data-dense
+ * business-development tool — warm neutral surfaces instead of stark white, a
+ * distinctive type pairing instead of default system fonts, soft rounded elevation
+ * instead of flat 1px borders everywhere, and a real nav treatment instead of plain
+ * underlined tabs. The 8 project-category colors (Residential/Commercial/etc., defined
+ * in src/lib/typeColors.js) are intentionally left untouched — they're meaningful,
+ * already used consistently across the map/list/report, and this redesign is about the
+ * surrounding chrome, not replacing an established semantic system.
+ *
+ * Type pairing: Space Grotesk (headers, nav, section titles — confident, a little
+ * architectural, distinct from default system-ui) + Inter (body text and dense data —
+ * built for exactly this kind of small-size, high-density UI legibility).
+ */
+
+:root {
+  /* Color */
+  --bg: #faf9f6;
+  --surface: #ffffff;
+  --surface-hover: #f5f4f0;
+  --border: #e7e4dd;
+  --border-strong: #d8d4ca;
+  --text: #1c1c1a;
+  --text-muted: #6b6b66;
+  --text-faint: #9b9a94;
+  --accent: #1e2a4a;
+  --accent-hover: #16203a;
+  --accent-soft: #eef0f5;
+  --danger: #b3261e;
+  --focus-ring: #1e2a4a;
+
+  /* Type */
+  --font-display: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+
+  /* Spacing scale */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+
+  /* Radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-pill: 999px;
+
+  /* Elevation */
+  --shadow-sm: 0 1px 2px rgba(28, 28, 26, 0.05), 0 1px 1px rgba(28, 28, 26, 0.04);
+  --shadow-md: 0 4px 12px rgba(28, 28, 26, 0.08), 0 1px 3px rgba(28, 28, 26, 0.06);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+/* ---------- Layout chrome ---------- */
+
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  font-family: var(--font-body);
+  background: var(--bg);
+}
+
+.app-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 20px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.app-nav-tab {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 8px 18px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+  text-transform: capitalize;
+}
+
+.app-nav-tab:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.app-nav-tab.active {
+  background: var(--accent);
+  color: white;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-5);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+/* ---------- Form controls ---------- */
+
+.input,
+.select {
+  font-family: var(--font-body);
+  font-size: 14px;
+  padding: 9px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.input:focus,
+.select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+  outline: none;
+}
+
+.input::placeholder {
+  color: var(--text-faint);
+}
+
+/* ---------- Buttons ---------- */
+
+.btn {
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  padding: 9px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+  white-space: nowrap;
+}
+
+.btn:hover {
+  background: var(--surface-hover);
+  border-color: var(--text-faint);
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+.btn-text {
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 14px;
+  padding: var(--space-2) 0;
+  transition: color 0.15s ease;
+}
+
+.btn-text:hover {
+  color: var(--text);
+}
+
+/* ---------- Surfaces ---------- */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.panel {
+  background: var(--surface);
+  height: 100%;
+  overflow-y: auto;
+}
+
+/* ---------- Rows / lists ---------- */
+
+.list-row {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.list-row:hover {
+  background: var(--surface-hover);
+}
+
+.list-row:last-child {
+  border-bottom: none;
+}
+
+/* ---------- Badges ---------- */
+
+.badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  color: white;
+}
+
+.badge-neutral {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* ---------- Tables ---------- */
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.data-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border-strong);
+  text-align: left;
+  padding: 12px 20px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.data-table thead th:hover {
+  color: var(--text);
+}
+
+.data-table tbody tr {
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.data-table tbody tr:hover {
+  background: var(--surface-hover);
+}
+
+.data-table td {
+  padding: 12px 20px;
+}
+
+/* ---------- Section titles (Report, PartyDetail, ProjectDetail) ---------- */
+
+.section-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: var(--space-3);
+}
+
+/* ---------- Scrollbars — subtle, not the harsh OS default ---------- */
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: var(--radius-pill);
+  border: 2px solid var(--bg);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-faint);
+}

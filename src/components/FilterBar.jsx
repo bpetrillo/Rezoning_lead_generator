@@ -7,25 +7,18 @@ export default function FilterBar({
   resultCount,
 }) {
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 12,
-        padding: '10px 16px',
-        borderBottom: '1px solid #e2e2e2',
-      }}
-    >
+    <div className="toolbar">
       <input
+        className="input"
         placeholder="Search places, projects, parcels..."
         value={filters.search}
         onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
-        style={{ flex: 1, padding: '8px 10px', border: '1px solid #ccc', borderRadius: 6 }}
+        style={{ flex: 1, minWidth: 180 }}
       />
       <select
+        className="select"
         value={filters.municipality}
         onChange={(e) => setFilters((f) => ({ ...f, municipality: e.target.value }))}
-        style={{ padding: '8px 10px', border: '1px solid #ccc', borderRadius: 6 }}
       >
         <option value="all">All municipalities</option>
         {municipalities.map((m) => (
@@ -35,9 +28,9 @@ export default function FilterBar({
         ))}
       </select>
       <select
+        className="select"
         value={filters.projectType}
         onChange={(e) => setFilters((f) => ({ ...f, projectType: e.target.value }))}
-        style={{ padding: '8px 10px', border: '1px solid #ccc', borderRadius: 6 }}
       >
         <option value="all">All types</option>
         {projectTypes.map((t) => (
@@ -47,9 +40,9 @@ export default function FilterBar({
         ))}
       </select>
       <select
+        className="select"
         value={filters.leadStatus}
         onChange={(e) => setFilters((f) => ({ ...f, leadStatus: e.target.value }))}
-        style={{ padding: '8px 10px', border: '1px solid #ccc', borderRadius: 6 }}
       >
         <option value="all">My pipeline: all</option>
         <option value="untracked">Not tracked yet</option>
@@ -59,31 +52,32 @@ export default function FilterBar({
           </option>
         ))}
       </select>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}>
-        <label style={{ fontSize: 13, color: '#666' }}>Last action:</label>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, whiteSpace: 'nowrap' }}>
+        <label style={{ fontSize: 13, color: 'var(--text-muted)' }}>Last action:</label>
         <input
+          className="input"
           type="date"
           value={filters.dateFrom}
           onChange={(e) => setFilters((f) => ({ ...f, dateFrom: e.target.value }))}
-          style={{ padding: '6px 8px', border: '1px solid #ccc', borderRadius: 6 }}
+          style={{ padding: '9px 10px' }}
         />
-        <span style={{ color: '#999' }}>–</span>
+        <span style={{ color: 'var(--text-faint)' }}>–</span>
         <input
+          className="input"
           type="date"
           value={filters.dateTo}
           onChange={(e) => setFilters((f) => ({ ...f, dateTo: e.target.value }))}
-          style={{ padding: '6px 8px', border: '1px solid #ccc', borderRadius: 6 }}
+          style={{ padding: '9px 10px' }}
         />
         {(filters.dateFrom || filters.dateTo) && (
-          <button
-            onClick={() => setFilters((f) => ({ ...f, dateFrom: '', dateTo: '' }))}
-            style={{ padding: '4px 8px', fontSize: 12, cursor: 'pointer', border: '1px solid #ccc', borderRadius: 6, background: 'white' }}
-          >
+          <button className="btn" onClick={() => setFilters((f) => ({ ...f, dateFrom: '', dateTo: '' }))}>
             Clear
           </button>
         )}
       </div>
-      <span style={{ color: '#666', fontSize: 14, whiteSpace: 'nowrap' }}>{resultCount} projects</span>
+      <span style={{ color: 'var(--text-muted)', fontSize: 14, whiteSpace: 'nowrap', marginLeft: 'auto' }}>
+        {resultCount.toLocaleString()} projects
+      </span>
     </div>
   )
 }

@@ -6,10 +6,8 @@ import MiniMap from './MiniMap.jsx'
 
 function Section({ title, children }) {
   return (
-    <div style={{ marginTop: 20 }}>
-      <div style={{ fontSize: 12, fontWeight: 700, color: '#888', letterSpacing: 0.5, marginBottom: 8 }}>
-        {title.toUpperCase()}
-      </div>
+    <div style={{ marginTop: 'var(--space-5)' }}>
+      <div className="section-title">{title}</div>
       {children}
     </div>
   )
@@ -19,8 +17,10 @@ function Row({ label, children }) {
   if (children == null || children === '') return null
   return (
     <tr>
-      <td style={{ color: '#888', padding: '4px 12px 4px 0', verticalAlign: 'top', whiteSpace: 'nowrap' }}>{label}</td>
-      <td style={{ padding: '4px 0' }}>{children}</td>
+      <td style={{ color: 'var(--text-muted)', padding: '5px 12px 5px 0', verticalAlign: 'top', whiteSpace: 'nowrap', fontSize: 13 }}>
+        {label}
+      </td>
+      <td style={{ padding: '5px 0' }}>{children}</td>
     </tr>
   )
 }
@@ -111,72 +111,51 @@ export default function ProjectDetail({ project: p, onBack, onUpdate }) {
   const hasZoningChange = p.current_zoning && p.zoning && p.current_zoning !== p.zoning
 
   return (
-    <div style={{ padding: 16 }}>
-      <button onClick={onBack} style={{ marginBottom: 12, cursor: 'pointer' }}>
+    <div style={{ padding: 'var(--space-5)' }}>
+      <button onClick={onBack} className="btn-text" style={{ marginBottom: 'var(--space-3)', paddingLeft: 0 }}>
         ← Back to list
       </button>
 
-      <h2 style={{ margin: '0 0 8px' }}>{p.name}</h2>
+      <h2 style={{ marginBottom: 10, fontSize: 20 }}>{p.name}</h2>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
-        <span
-          style={{
-            fontSize: 11,
-            fontWeight: 600,
-            padding: '2px 8px',
-            borderRadius: 12,
-            color: 'white',
-            backgroundColor: color,
-          }}
-        >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
+        <span className="badge" style={{ backgroundColor: color }}>
           {getTypeLabel(p.project_type)}
         </span>
-        {p.status && <span style={{ color: '#666', fontSize: 13 }}>{p.status}</span>}
-        {p.last_action_date && <span style={{ color: '#999', fontSize: 13 }}>· {p.last_action_date}</span>}
-        {p.acreage && <span style={{ color: '#666', fontSize: 13 }}>· {p.acreage} acres</span>}
+        {p.status && <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>{p.status}</span>}
+        {p.last_action_date && <span style={{ color: 'var(--text-faint)', fontSize: 13 }}>· {p.last_action_date}</span>}
+        {p.acreage && <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>· {p.acreage} acres</span>}
       </div>
 
-      <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8 }}>{headline}</div>
+      <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 10, fontFamily: 'var(--font-display)' }}>{headline}</div>
 
       <Section title="My Pipeline">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-          <select
-            value={leadStatus}
-            onChange={handleStatusChange}
-            style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid #ccc', fontSize: 14 }}
-          >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+          <select className="select" value={leadStatus} onChange={handleStatusChange}>
             {LEAD_STATUSES.map((s) => (
               <option key={s.value} value={s.value}>
                 {s.label}
               </option>
             ))}
           </select>
-          <span style={{ fontSize: 12, color: '#999' }}>
+          <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>
             {saveState === 'saving' && 'Saving...'}
             {saveState === 'saved' && 'Saved'}
             {saveState === 'error' && 'Failed to save — try again'}
           </span>
         </div>
         <textarea
+          className="input"
           value={leadNotes}
           onChange={(e) => setLeadNotes(e.target.value)}
           onBlur={handleNotesBlur}
           placeholder="Notes — e.g. who you spoke with, next steps..."
           rows={3}
-          style={{
-            width: '100%',
-            padding: 8,
-            borderRadius: 6,
-            border: '1px solid #ccc',
-            fontSize: 14,
-            fontFamily: 'inherit',
-            resize: 'vertical',
-            boxSizing: 'border-box',
-          }}
+          style={{ width: '100%', fontFamily: 'inherit', resize: 'vertical' }}
         />
       </Section>
 
-      {p.description && <p style={{ color: '#333', lineHeight: 1.5 }}>{p.description}</p>}
+      {p.description && <p style={{ color: 'var(--text)', lineHeight: 1.55, marginTop: 'var(--space-4)' }}>{p.description}</p>}
 
       <Section title="Parties">
         <table style={{ width: '100%', fontSize: 14 }}>
@@ -188,57 +167,45 @@ export default function ProjectDetail({ project: p, onBack, onUpdate }) {
           </tbody>
         </table>
         {!p.applicant && !p.developer && !p.owner && (
-          <div style={{ color: '#999', fontSize: 13, marginBottom: 8 }}>No parties listed</div>
+          <div style={{ color: 'var(--text-faint)', fontSize: 13, marginBottom: 8 }}>No parties listed</div>
         )}
 
-        <div style={{ marginTop: 12 }}>
+        <div style={{ marginTop: 14 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <label style={{ display: 'block', fontSize: 12, color: '#888', marginBottom: 4 }}>
+            <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 5 }}>
               Email {p.contact_email && !p.manual_contact_email ? '(auto-detected)' : p.manual_contact_email ? '(your entry)' : ''}
             </label>
-            <span style={{ fontSize: 12, color: '#999' }}>
+            <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>
               {saveState === 'saving' && 'Saving...'}
               {saveState === 'saved' && 'Saved'}
               {saveState === 'error' && 'Failed to save — try again'}
             </span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
             <input
+              className="input"
               type="email"
               value={contactEmail}
               onChange={(e) => setContactEmail(e.target.value)}
               onBlur={handleContactEmailBlur}
               placeholder="Add an email address..."
-              style={{
-                flex: 1,
-                padding: '6px 10px',
-                borderRadius: 6,
-                border: '1px solid #ccc',
-                fontSize: 14,
-                boxSizing: 'border-box',
-              }}
+              style={{ flex: 1 }}
             />
             {contactEmail && <a href={`mailto:${contactEmail}`}>✉️</a>}
           </div>
 
-          <label style={{ display: 'block', fontSize: 12, color: '#888', marginBottom: 4 }}>
+          <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 5 }}>
             Phone {p.contact_phone && !p.manual_contact_phone ? '(auto-detected)' : p.manual_contact_phone ? '(your entry)' : ''}
           </label>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <input
+              className="input"
               type="tel"
               value={contactPhone}
               onChange={(e) => setContactPhone(e.target.value)}
               onBlur={handleContactPhoneBlur}
               placeholder="Add a phone number..."
-              style={{
-                flex: 1,
-                padding: '6px 10px',
-                borderRadius: 6,
-                border: '1px solid #ccc',
-                fontSize: 14,
-                boxSizing: 'border-box',
-              }}
+              style={{ flex: 1 }}
             />
             {contactPhone && <a href={`tel:${contactPhone}`}>📞</a>}
           </div>
@@ -251,7 +218,7 @@ export default function ProjectDetail({ project: p, onBack, onUpdate }) {
             <Row label="Zoning">
               {hasZoningChange ? (
                 <>
-                  {p.current_zoning} <span style={{ color: '#999' }}>→</span> {p.zoning}
+                  {p.current_zoning} <span style={{ color: 'var(--text-faint)' }}>→</span> {p.zoning}
                 </>
               ) : (
                 p.zoning || p.current_zoning
@@ -266,35 +233,30 @@ export default function ProjectDetail({ project: p, onBack, onUpdate }) {
 
       <Section title="Location">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <label style={{ display: 'block', fontSize: 12, color: '#888', marginBottom: 4 }}>
+          <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 5 }}>
             Address {p.address && !p.manual_address ? '(auto-detected)' : p.manual_address ? '(your entry)' : ''}
           </label>
-          <span style={{ fontSize: 12, color: '#999' }}>
+          <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>
             {saveState === 'saving' && 'Saving...'}
             {saveState === 'saved' && 'Saved'}
             {saveState === 'error' && 'Failed to save — try again'}
           </span>
         </div>
         <input
+          className="input"
           type="text"
           value={address}
           onChange={(e) => setAddress(e.target.value)}
           onBlur={handleAddressBlur}
           placeholder="Add an address..."
-          style={{
-            width: '100%',
-            padding: '6px 10px',
-            borderRadius: 6,
-            border: '1px solid #ccc',
-            fontSize: 14,
-            marginBottom: 8,
-            boxSizing: 'border-box',
-          }}
+          style={{ width: '100%', marginBottom: 10 }}
         />
-        <div style={{ marginBottom: 8, color: '#333' }}>{p.municipality}, NC</div>
-        <MiniMap project={p} />
+        <div style={{ marginBottom: 10, color: 'var(--text)' }}>{p.municipality}, NC</div>
+        <div style={{ borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
+          <MiniMap project={p} />
+        </div>
         {p.manual_address && (
-          <div style={{ fontSize: 12, color: '#999', marginTop: 6 }}>
+          <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 8 }}>
             Note: editing the address text doesn't move the pin above — that's based on
             stored coordinates, not this text.
           </div>
@@ -307,7 +269,7 @@ export default function ProjectDetail({ project: p, onBack, onUpdate }) {
             View original filing
           </a>
         ) : (
-          <span style={{ color: '#999' }}>Not available</span>
+          <span style={{ color: 'var(--text-faint)' }}>Not available</span>
         )}
       </Section>
 

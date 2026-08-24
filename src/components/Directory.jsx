@@ -40,26 +40,15 @@ export default function Directory({ projects, onSelectParty }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          padding: '10px 16px',
-          borderBottom: '1px solid #e2e2e2',
-        }}
-      >
+      <div className="toolbar">
         <input
+          className="input"
           placeholder="Search by name or company..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          style={{ flex: 1, padding: '8px 10px', border: '1px solid #ccc', borderRadius: 6 }}
+          style={{ flex: 1, minWidth: 200 }}
         />
-        <select
-          value={roleFilter}
-          onChange={(e) => setRoleFilter(e.target.value)}
-          style={{ padding: '8px 10px', border: '1px solid #ccc', borderRadius: 6 }}
-        >
+        <select className="select" value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
           <option value="all">All roles</option>
           {roles.map((r) => (
             <option key={r} value={r}>
@@ -67,76 +56,56 @@ export default function Directory({ projects, onSelectParty }) {
             </option>
           ))}
         </select>
-        <select
-          value={typeFilter}
-          onChange={(e) => setTypeFilter(e.target.value)}
-          style={{ padding: '8px 10px', border: '1px solid #ccc', borderRadius: 6 }}
-        >
+        <select className="select" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
           <option value="all">Companies & People</option>
           <option value="Company">Companies</option>
           <option value="Person">People</option>
         </select>
-        <span style={{ color: '#666', fontSize: 14, whiteSpace: 'nowrap' }}>{filtered.length} parties</span>
-        <button
-          onClick={() => downloadCsv('directory.csv', CSV_COLUMNS, filtered)}
-          style={{ padding: '8px 12px', border: '1px solid #ccc', borderRadius: 6, background: 'white', cursor: 'pointer' }}
-        >
+        <span style={{ color: 'var(--text-muted)', fontSize: 14, whiteSpace: 'nowrap', marginLeft: 'auto' }}>
+          {filtered.length} parties
+        </span>
+        <button className="btn" onClick={() => downloadCsv('directory.csv', CSV_COLUMNS, filtered)}>
           ⬇ CSV
         </button>
       </div>
 
       <div style={{ flex: 1, overflow: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+        <table className="data-table">
           <thead>
-            <tr style={{ position: 'sticky', top: 0, background: 'white', borderBottom: '2px solid #e2e2e2', textAlign: 'left' }}>
-              <th style={{ padding: '10px 16px' }}>Name</th>
-              <th style={{ padding: '10px 16px' }}>Type</th>
-              <th style={{ padding: '10px 16px' }}>Role</th>
-              <th style={{ padding: '10px 16px' }}>Projects</th>
-              <th style={{ padding: '10px 16px' }}>Location</th>
-              <th style={{ padding: '10px 16px' }}>Project Types</th>
-              <th style={{ padding: '10px 16px' }}>Last Seen</th>
-              <th style={{ padding: '10px 16px' }}>Contact</th>
+            <tr>
+              <th>Name</th>
+              <th>Type</th>
+              <th>Role</th>
+              <th>Projects</th>
+              <th>Location</th>
+              <th>Project Types</th>
+              <th>Last Seen</th>
+              <th>Contact</th>
             </tr>
           </thead>
           <tbody>
             {filtered.map((d) => (
-              <tr
-                key={d.name}
-                onClick={() => onSelectParty?.(d.name)}
-                style={{ borderBottom: '1px solid #eee', cursor: onSelectParty ? 'pointer' : 'default' }}
-              >
-                <td style={{ padding: '10px 16px', fontWeight: 600 }}>{d.name}</td>
-                <td style={{ padding: '10px 16px', color: '#666' }}>{d.entityType}</td>
-                <td style={{ padding: '10px 16px', color: '#666' }}>{d.roles.join(', ')}</td>
-                <td style={{ padding: '10px 16px' }}>{d.projectCount}</td>
-                <td style={{ padding: '10px 16px', color: '#666' }}>
+              <tr key={d.name} onClick={() => onSelectParty?.(d.name)}>
+                <td style={{ fontWeight: 600 }}>{d.name}</td>
+                <td style={{ color: 'var(--text-muted)' }}>{d.entityType}</td>
+                <td style={{ color: 'var(--text-muted)' }}>{d.roles.join(', ')}</td>
+                <td>{d.projectCount}</td>
+                <td style={{ color: 'var(--text-muted)' }}>
                   {d.municipalities[0] || '—'}
                   {d.municipalities.length > 1 ? ` +${d.municipalities.length - 1}` : ''}
                 </td>
-                <td style={{ padding: '10px 16px' }}>
+                <td>
                   {d.projectTypes.slice(0, 2).map((t) => (
-                    <span
-                      key={t}
-                      style={{
-                        display: 'inline-block',
-                        fontSize: 11,
-                        fontWeight: 600,
-                        padding: '2px 8px',
-                        borderRadius: 12,
-                        background: '#eee',
-                        marginRight: 4,
-                      }}
-                    >
+                    <span key={t} className="badge badge-neutral" style={{ marginRight: 4 }}>
                       {t}
                     </span>
                   ))}
                   {d.projectTypes.length > 2 ? (
-                    <span style={{ fontSize: 12, color: '#999' }}>+{d.projectTypes.length - 2}</span>
+                    <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>+{d.projectTypes.length - 2}</span>
                   ) : null}
                 </td>
-                <td style={{ padding: '10px 16px', color: '#666' }}>{formatShortDate(d.lastSeen) || '—'}</td>
-                <td style={{ padding: '10px 16px' }}>
+                <td style={{ color: 'var(--text-muted)' }}>{formatShortDate(d.lastSeen) || '—'}</td>
+                <td>
                   {d.contactEmail && (
                     <a href={`mailto:${d.contactEmail}`} onClick={(e) => e.stopPropagation()} style={{ marginRight: 8 }}>
                       ✉️
@@ -147,13 +116,17 @@ export default function Directory({ projects, onSelectParty }) {
                       📞
                     </a>
                   )}
-                  {!d.contactEmail && !d.contactPhone && <span style={{ color: '#ccc' }}>—</span>}
+                  {!d.contactEmail && !d.contactPhone && <span style={{ color: 'var(--text-faint)' }}>—</span>}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-        {filtered.length === 0 && <div style={{ padding: 24, color: '#999', textAlign: 'center' }}>No parties match these filters.</div>}
+        {filtered.length === 0 && (
+          <div style={{ padding: 32, color: 'var(--text-muted)', textAlign: 'center' }}>
+            No parties match these filters. Try a broader search or clearing a filter above.
+          </div>
+        )}
       </div>
     </div>
   )

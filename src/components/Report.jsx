@@ -28,8 +28,10 @@ function PieChart({ segments, size = 120 }) {
 function BreakdownSection({ title, segments, dimension, activeFilter, onSelect, showPie }) {
   const isActiveDimension = activeFilter?.dimension === dimension
   return (
-    <div style={{ marginBottom: 32 }}>
-      <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 14, color: '#222' }}>{title}</div>
+    <div className="card" style={{ padding: 22, marginBottom: 20 }}>
+      <div className="section-title" style={{ fontSize: 13, marginBottom: 16 }}>
+        {title}
+      </div>
       {isActiveDimension && (
         <div
           style={{
@@ -37,16 +39,17 @@ function BreakdownSection({ title, segments, dimension, activeFilter, onSelect, 
             alignItems: 'center',
             gap: 8,
             fontSize: 13,
-            background: '#f2f2f2',
-            borderRadius: 20,
-            padding: '4px 12px',
-            marginBottom: 12,
+            background: 'var(--accent-soft)',
+            color: 'var(--accent)',
+            borderRadius: 'var(--radius-pill)',
+            padding: '5px 12px',
+            marginBottom: 14,
           }}
         >
           <span
             style={{
-              width: 10,
-              height: 10,
+              width: 9,
+              height: 9,
               borderRadius: 3,
               background: segments.find((s) => s.key === activeFilter.value)?.color,
             }}
@@ -56,7 +59,7 @@ function BreakdownSection({ title, segments, dimension, activeFilter, onSelect, 
           </span>
           <button
             onClick={() => onSelect(dimension, null)}
-            style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#666', fontSize: 14 }}
+            style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--accent)', fontSize: 14, padding: 0 }}
           >
             ✕
           </button>
@@ -76,20 +79,24 @@ function BreakdownSection({ title, segments, dimension, activeFilter, onSelect, 
                   display: 'flex',
                   alignItems: 'center',
                   gap: 10,
-                  padding: '7px 0',
+                  padding: '8px 4px',
+                  borderRadius: 'var(--radius-sm)',
                   cursor: 'pointer',
                   opacity: isDimmed ? 0.4 : 1,
+                  transition: 'background 0.12s ease, opacity 0.12s ease',
                 }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--surface-hover)')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
               >
                 <span style={{ width: 10, height: 10, background: s.color, borderRadius: 3, flexShrink: 0 }} />
                 <span style={{ width: 150, flexShrink: 0, fontSize: 14, fontWeight: isActive ? 700 : 400 }}>
                   {s.key}
                 </span>
-                <div style={{ flex: 1, background: '#eee', borderRadius: 4, height: 8, overflow: 'hidden' }}>
-                  <div style={{ width: `${s.pct}%`, height: '100%', background: s.color }} />
+                <div style={{ flex: 1, background: 'var(--border)', borderRadius: 4, height: 7, overflow: 'hidden' }}>
+                  <div style={{ width: `${s.pct}%`, height: '100%', background: s.color, borderRadius: 4 }} />
                 </div>
                 <span style={{ width: 32, textAlign: 'right', fontWeight: 600, fontSize: 14 }}>{s.count}</span>
-                <span style={{ width: 40, textAlign: 'right', color: '#999', fontSize: 12 }}>{s.pct}%</span>
+                <span style={{ width: 40, textAlign: 'right', color: 'var(--text-faint)', fontSize: 12 }}>{s.pct}%</span>
               </div>
             )
           })}
@@ -155,11 +162,11 @@ export default function Report({ projects, onSelectParty }) {
   const missingSizeCount = filtered.filter((p) => p.acreageNumeric == null).length
 
   return (
-    <div style={{ padding: 24, overflow: 'auto', height: '100%', boxSizing: 'border-box', maxWidth: 900, margin: '0 auto' }}>
-      <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 4 }}>
+    <div style={{ padding: 24, overflow: 'auto', height: '100%', boxSizing: 'border-box', maxWidth: 900, margin: '0 auto', background: 'var(--bg)' }}>
+      <div style={{ fontSize: 22, fontWeight: 700, marginBottom: 4, fontFamily: 'var(--font-display)' }}>
         {filtered.length.toLocaleString()} Projects {activeFilter ? 'In Filtered View' : 'In View'}
       </div>
-      <div style={{ color: '#888', fontSize: 13, marginBottom: 28 }}>
+      <div style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 24 }}>
         Click any category, municipality, status, pipeline stage, or size range below to filter the whole report to
         just that slice.
       </div>
@@ -217,15 +224,15 @@ export default function Report({ projects, onSelectParty }) {
           onSelect={handleSelect}
         />
         {missingSizeCount > 0 && (
-          <div style={{ color: '#999', fontSize: 13, fontStyle: 'italic', marginTop: -20 }}>
+          <div style={{ color: 'var(--text-faint)', fontSize: 13, fontStyle: 'italic', marginTop: -14 }}>
             + {missingSizeCount} project{missingSizeCount === 1 ? '' : 's'} with unknown size
           </div>
         )}
       </div>
 
       {activeFilter && topParties.length > 0 && (
-        <div style={{ marginBottom: 32 }}>
-          <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 14, color: '#222' }}>
+        <div className="card" style={{ padding: 22, marginBottom: 20 }}>
+          <div className="section-title" style={{ fontSize: 13, marginBottom: 16 }}>
             Top Parties in This View
           </div>
           {topParties.map((party) => (
@@ -235,13 +242,13 @@ export default function Report({ projects, onSelectParty }) {
               style={{
                 display: 'flex',
                 justifyContent: 'space-between',
-                padding: '8px 0',
-                borderBottom: '1px solid #f0f0f0',
+                padding: '10px 4px',
+                borderBottom: '1px solid var(--border)',
                 cursor: onSelectParty ? 'pointer' : 'default',
               }}
             >
               <span style={{ fontWeight: 600 }}>{party.name}</span>
-              <span style={{ color: '#888', fontSize: 13 }}>
+              <span style={{ color: 'var(--text-faint)', fontSize: 13 }}>
                 {party.projectCount} project{party.projectCount === 1 ? '' : 's'}
               </span>
             </div>

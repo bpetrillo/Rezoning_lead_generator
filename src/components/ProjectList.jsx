@@ -2,9 +2,14 @@ import { getTypeColor, getTypeLabel } from '../lib/typeColors.js'
 import { getLeadStatusColor } from '../lib/leadStatus.js'
 
 export default function ProjectList({ projects, loading, error, onSelect }) {
-  if (loading) return <div style={{ padding: 16 }}>Loading projects...</div>
-  if (error) return <div style={{ padding: 16, color: '#c00' }}>Error: {error}</div>
-  if (projects.length === 0) return <div style={{ padding: 16, color: '#666' }}>No projects match these filters.</div>
+  if (loading) return <div style={{ padding: 24, color: 'var(--text-muted)' }}>Loading projects…</div>
+  if (error) return <div style={{ padding: 24, color: 'var(--danger)' }}>Couldn't load projects: {error}</div>
+  if (projects.length === 0)
+    return (
+      <div style={{ padding: 24, color: 'var(--text-muted)' }}>
+        No projects match these filters. Try clearing a filter or widening the date range above.
+      </div>
+    )
 
   return (
     <div>
@@ -15,41 +20,19 @@ export default function ProjectList({ projects, loading, error, onSelect }) {
           <div
             key={p.id}
             onClick={() => onSelect(p)}
-            style={{
-              padding: '12px 16px',
-              borderBottom: '1px solid #eee',
-              borderLeft: `4px solid ${color}`,
-              cursor: 'pointer',
-            }}
+            className="list-row"
+            style={{ borderLeft: `3px solid ${color}` }}
           >
-            <div style={{ fontWeight: 600 }}>{p.name}</div>
-            <div style={{ fontSize: 13, color: '#666' }}>
+            <div style={{ fontWeight: 600, fontSize: 14.5 }}>{p.name}</div>
+            <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>
               {p.municipality} · {p.manual_address || p.address}
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
-              <span
-                style={{
-                  fontSize: 11,
-                  fontWeight: 600,
-                  padding: '2px 8px',
-                  borderRadius: 12,
-                  color: 'white',
-                  backgroundColor: color,
-                }}
-              >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+              <span className="badge" style={{ backgroundColor: color }}>
                 {getTypeLabel(p.project_type)}
               </span>
               {p.lead_status && (
-                <span
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 600,
-                    padding: '2px 8px',
-                    borderRadius: 12,
-                    color: 'white',
-                    backgroundColor: leadColor,
-                  }}
-                >
+                <span className="badge" style={{ backgroundColor: leadColor }}>
                   {p.lead_status}
                 </span>
               )}
@@ -58,7 +41,7 @@ export default function ProjectList({ projects, loading, error, onSelect }) {
                   ✉️
                 </span>
               )}
-              <span style={{ fontSize: 12, color: '#888' }}>
+              <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>
                 {p.status} {p.last_action_date ? `· ${p.last_action_date}` : ''}
               </span>
             </div>

@@ -5,18 +5,8 @@ import { getTypeColor, getTypeLabel } from '../lib/typeColors.js'
 
 function Section({ title, children }) {
   return (
-    <div
-      style={{
-        background: 'white',
-        border: '1px solid #e2e2e2',
-        borderRadius: 8,
-        padding: 16,
-        marginBottom: 16,
-      }}
-    >
-      <div style={{ fontSize: 12, fontWeight: 700, color: '#888', letterSpacing: 0.5, marginBottom: 12 }}>
-        {title.toUpperCase()}
-      </div>
+    <div className="card" style={{ padding: 18, marginBottom: 16 }}>
+      <div className="section-title">{title}</div>
       {children}
     </div>
   )
@@ -50,36 +40,27 @@ export default function PartyDetail({ partyName, projects, onBack, onSelectProje
   if (!party) {
     return (
       <div style={{ padding: 24 }}>
-        <button onClick={onBack} style={{ cursor: 'pointer' }}>
+        <button onClick={onBack} className="btn-text" style={{ paddingLeft: 0 }}>
           ← Back to directory
         </button>
-        <p style={{ color: '#999', marginTop: 16 }}>Couldn't find "{partyName}" — they may no longer appear in any project.</p>
+        <p style={{ color: 'var(--text-muted)', marginTop: 16 }}>
+          Couldn't find "{partyName}" — they may no longer appear in any project.
+        </p>
       </div>
     )
   }
 
   return (
-    <div style={{ padding: 24, overflow: 'auto', height: '100%', boxSizing: 'border-box' }}>
-      <button onClick={onBack} style={{ marginBottom: 16, cursor: 'pointer', border: 'none', background: 'none', color: '#555' }}>
+    <div style={{ padding: 24, overflow: 'auto', height: '100%', boxSizing: 'border-box', background: 'var(--bg)' }}>
+      <button onClick={onBack} className="btn-text" style={{ marginBottom: 16, paddingLeft: 0 }}>
         ← Back to directory
       </button>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-        <h2 style={{ margin: 0 }}>{party.name}</h2>
-        <span
-          style={{
-            fontSize: 12,
-            fontWeight: 600,
-            padding: '3px 10px',
-            borderRadius: 12,
-            background: '#eee',
-            color: '#555',
-          }}
-        >
-          {party.entityType}
-        </span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+        <h2 style={{ fontSize: 22 }}>{party.name}</h2>
+        <span className="badge badge-neutral">{party.entityType}</span>
       </div>
-      <div style={{ color: '#666', marginBottom: 20 }}>{party.roles.join(', ')}</div>
+      <div style={{ color: 'var(--text-muted)', marginBottom: 22 }}>{party.roles.join(', ')}</div>
 
       <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
         <div style={{ flex: '1 1 320px', minWidth: 280 }}>
@@ -87,13 +68,13 @@ export default function PartyDetail({ partyName, projects, onBack, onSelectProje
             <table style={{ width: '100%', fontSize: 14 }}>
               <tbody>
                 <tr>
-                  <td style={{ color: '#888', padding: '6px 12px 6px 0' }}>Phone</td>
+                  <td style={{ color: 'var(--text-muted)', padding: '6px 12px 6px 0' }}>Phone</td>
                   <td style={{ padding: '6px 0' }}>
                     {party.contactPhone ? <a href={`tel:${party.contactPhone}`}>{party.contactPhone}</a> : '—'}
                   </td>
                 </tr>
                 <tr>
-                  <td style={{ color: '#888', padding: '6px 12px 6px 0' }}>Email</td>
+                  <td style={{ color: 'var(--text-muted)', padding: '6px 12px 6px 0' }}>Email</td>
                   <td style={{ padding: '6px 0' }}>
                     {party.contactEmail ? <a href={`mailto:${party.contactEmail}`}>{party.contactEmail}</a> : '—'}
                   </td>
@@ -103,7 +84,9 @@ export default function PartyDetail({ partyName, projects, onBack, onSelectProje
           </Section>
 
           <Section title={`Worked With (${workedWith.length})`}>
-            {workedWith.length === 0 && <div style={{ color: '#999', fontSize: 13 }}>No shared projects with anyone else yet.</div>}
+            {workedWith.length === 0 && (
+              <div style={{ color: 'var(--text-faint)', fontSize: 13 }}>No shared projects with anyone else yet.</div>
+            )}
             {workedWith.map((w) => (
               <div
                 key={w.name}
@@ -112,18 +95,18 @@ export default function PartyDetail({ partyName, projects, onBack, onSelectProje
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
-                  padding: '10px 0',
-                  borderBottom: '1px solid #f0f0f0',
+                  padding: '11px 0',
+                  borderBottom: '1px solid var(--border)',
                   cursor: 'pointer',
                 }}
               >
                 <div>
                   <div style={{ fontWeight: 600 }}>{w.name}</div>
-                  <div style={{ fontSize: 13, color: '#888' }}>
+                  <div style={{ fontSize: 13, color: 'var(--text-faint)' }}>
                     {w.sharedCount} project{w.sharedCount === 1 ? '' : 's'} together
                   </div>
                 </div>
-                <span style={{ color: '#ccc' }}>›</span>
+                <span style={{ color: 'var(--text-faint)' }}>›</span>
               </div>
             ))}
           </Section>
@@ -141,34 +124,23 @@ export default function PartyDetail({ partyName, projects, onBack, onSelectProje
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'flex-start',
-                    padding: '12px 0',
-                    borderBottom: '1px solid #f0f0f0',
+                    padding: '13px 0',
+                    borderBottom: '1px solid var(--border)',
                     cursor: 'pointer',
                   }}
                 >
                   <div>
                     <div style={{ fontWeight: 600 }}>{p.name}</div>
                     {(p.manual_address || p.address) && (
-                      <div style={{ fontSize: 13, color: '#666', marginTop: 2 }}>
+                      <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>
                         📍 {p.manual_address || p.address}
                       </div>
                     )}
-                    <span
-                      style={{
-                        display: 'inline-block',
-                        marginTop: 6,
-                        fontSize: 11,
-                        fontWeight: 600,
-                        padding: '2px 8px',
-                        borderRadius: 12,
-                        color: 'white',
-                        backgroundColor: color,
-                      }}
-                    >
+                    <span className="badge" style={{ backgroundColor: color, marginTop: 7, display: 'inline-block' }}>
                       {getTypeLabel(p.project_type)}
                     </span>
                   </div>
-                  <span style={{ fontSize: 12, color: '#999', whiteSpace: 'nowrap' }}>
+                  <span style={{ fontSize: 12, color: 'var(--text-faint)', whiteSpace: 'nowrap' }}>
                     {formatShortDate(p.last_action_date || p.last_scraped_at)}
                   </span>
                 </div>

@@ -67,32 +67,18 @@ export default function ProjectsTable({ projects, onSelectProject }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'flex-end',
-          padding: '8px 16px',
-          borderBottom: '1px solid #e2e2e2',
-        }}
-      >
-        <button
-          onClick={() => downloadCsv('projects.csv', CSV_COLUMNS, sorted)}
-          style={{ padding: '8px 12px', border: '1px solid #ccc', borderRadius: 6, background: 'white', cursor: 'pointer' }}
-        >
+      <div className="toolbar" style={{ justifyContent: 'flex-end' }}>
+        <button className="btn" onClick={() => downloadCsv('projects.csv', CSV_COLUMNS, sorted)}>
           ⬇ CSV
         </button>
       </div>
 
       <div style={{ flex: 1, overflow: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+        <table className="data-table">
           <thead>
-            <tr style={{ position: 'sticky', top: 0, background: 'white', borderBottom: '2px solid #e2e2e2', textAlign: 'left' }}>
+            <tr>
               {COLUMNS.map((col) => (
-                <th
-                  key={col.key}
-                  onClick={() => handleHeaderClick(col.key)}
-                  style={{ padding: '10px 16px', cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap' }}
-                >
+                <th key={col.key} onClick={() => handleHeaderClick(col.key)}>
                   {col.label}
                   {sortKey === col.key && <span style={{ marginLeft: 4 }}>{sortDir === 'asc' ? '▲' : '▼'}</span>}
                 </th>
@@ -103,41 +89,30 @@ export default function ProjectsTable({ projects, onSelectProject }) {
             {sorted.map((p) => {
               const color = getTypeColor(p.project_type)
               return (
-                <tr
-                  key={p.id}
-                  onClick={() => onSelectProject(p)}
-                  style={{ borderBottom: '1px solid #eee', cursor: 'pointer' }}
-                >
-                  <td style={{ padding: '10px 16px', fontWeight: 600 }}>{p.name}</td>
-                  <td style={{ padding: '10px 16px', color: '#666' }}>{p.municipality}</td>
-                  <td style={{ padding: '10px 16px' }}>
-                    <span
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 600,
-                        padding: '2px 8px',
-                        borderRadius: 12,
-                        color: 'white',
-                        backgroundColor: color,
-                      }}
-                    >
+                <tr key={p.id} onClick={() => onSelectProject(p)}>
+                  <td style={{ fontWeight: 600 }}>{p.name}</td>
+                  <td style={{ color: 'var(--text-muted)' }}>{p.municipality}</td>
+                  <td>
+                    <span className="badge" style={{ backgroundColor: color }}>
                       {getTypeLabel(p.project_type)}
                     </span>
                   </td>
-                  <td style={{ padding: '10px 16px', color: '#666' }}>{p.status || '—'}</td>
-                  <td style={{ padding: '10px 16px', color: '#666' }}>{p.lead_status || '—'}</td>
-                  <td style={{ padding: '10px 16px', color: '#666' }}>{p.manual_address || p.address || '—'}</td>
-                  <td style={{ padding: '10px 16px', color: '#666' }}>{p.applicant || '—'}</td>
-                  <td style={{ padding: '10px 16px', color: '#666' }}>
-                    {p.acreageNumeric != null ? p.acreageNumeric : '—'}
-                  </td>
-                  <td style={{ padding: '10px 16px', color: '#666' }}>{formatShortDate(p.last_action_date) || '—'}</td>
+                  <td style={{ color: 'var(--text-muted)' }}>{p.status || '—'}</td>
+                  <td style={{ color: 'var(--text-muted)' }}>{p.lead_status || '—'}</td>
+                  <td style={{ color: 'var(--text-muted)' }}>{p.manual_address || p.address || '—'}</td>
+                  <td style={{ color: 'var(--text-muted)' }}>{p.applicant || '—'}</td>
+                  <td style={{ color: 'var(--text-muted)' }}>{p.acreageNumeric != null ? p.acreageNumeric : '—'}</td>
+                  <td style={{ color: 'var(--text-muted)' }}>{formatShortDate(p.last_action_date) || '—'}</td>
                 </tr>
               )
             })}
           </tbody>
         </table>
-        {sorted.length === 0 && <div style={{ padding: 24, color: '#999', textAlign: 'center' }}>No projects match these filters.</div>}
+        {sorted.length === 0 && (
+          <div style={{ padding: 32, color: 'var(--text-muted)', textAlign: 'center' }}>
+            No projects match these filters. Try clearing a filter above.
+          </div>
+        )}
       </div>
     </div>
   )

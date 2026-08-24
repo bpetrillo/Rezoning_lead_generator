@@ -129,8 +129,8 @@ export default function App() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', fontFamily: 'system-ui, sans-serif' }}>
-      <div style={{ display: 'flex', gap: 4, padding: '8px 16px 0', borderBottom: '1px solid #e2e2e2' }}>
+    <div className="app-shell">
+      <div className="app-nav">
         {['map', 'table', 'report', 'directory'].map((v) => (
           <button
             key={v}
@@ -138,15 +138,7 @@ export default function App() {
               setView(v)
               setSelectedParty(null)
             }}
-            style={{
-              padding: '8px 16px',
-              border: 'none',
-              borderBottom: view === v ? '2px solid #333' : '2px solid transparent',
-              background: 'none',
-              fontWeight: view === v ? 600 : 400,
-              cursor: 'pointer',
-              textTransform: 'capitalize',
-            }}
+            className={`app-nav-tab${view === v ? ' active' : ''}`}
           >
             {v}
           </button>
@@ -196,7 +188,7 @@ export default function App() {
               <div style={{ flex: 1.4, minWidth: 0 }}>
                 <MapView projects={filtered} selected={selected} onSelect={setSelected} />
               </div>
-              <div style={{ width: 380, borderLeft: '1px solid #e2e2e2', overflowY: 'auto' }}>
+              <div style={{ width: 380, borderLeft: '1px solid var(--border)', overflowY: 'auto' }} className="panel">
                 {selected ? (
                   <ProjectDetail project={selected} onBack={() => setSelected(null)} onUpdate={handleProjectUpdate} />
                 ) : (
