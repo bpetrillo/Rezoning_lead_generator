@@ -1,36 +1,19 @@
 import { useMemo, useState } from 'react'
 import { buildDirectory } from '../lib/directory.js'
 import { formatShortDate } from '../lib/format.js'
+import { downloadCsv } from '../lib/csv.js'
 
-function downloadCsv(rows) {
-  const headers = ['Name', 'Type', 'Roles', 'Projects', 'Locations', 'Project Types', 'Last Seen', 'Email', 'Phone']
-  const escapeCsvCell = (val) => `"${String(val ?? '').replace(/"/g, '""')}"`
-  const lines = [
-    headers.join(','),
-    ...rows.map((r) =>
-      [
-        r.name,
-        r.entityType,
-        r.roles.join('; '),
-        r.projectCount,
-        r.municipalities.join('; '),
-        r.projectTypes.join('; '),
-        formatShortDate(r.lastSeen) || '',
-        r.contactEmail || '',
-        r.contactPhone || '',
-      ]
-        .map(escapeCsvCell)
-        .join(',')
-    ),
-  ]
-  const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = 'directory.csv'
-  a.click()
-  URL.revokeObjectURL(url)
-}
+const CSV_COLUMNS = [
+  { label: 'Name', value: (r) => r.name },
+  { label: 'Type', value: (r) => r.entityType },
+  { label: 'Roles', value: (r) => r.roles.join('; ') },
+  { label: 'Projects', value: (r) => r.projectCount },
+  { label: 'Locations', value: (r) => r.municipalities.join('; ') },
+  { label: 'Project Types', value: (r) => r.projectTypes.join('; ') },
+  { label: 'Last Seen', value: (r) => formatShortDate(r.lastSeen) || '' },
+  { label: 'Email', value: (r) => r.contactEmail || '' },
+  { label: 'Phone', value: (r) => r.contactPhone || '' },
+]
 
 export default function Directory({ projects, onSelectParty }) {
   const [search, setSearch] = useState('')
@@ -95,7 +78,7 @@ export default function Directory({ projects, onSelectParty }) {
         </select>
         <span style={{ color: '#666', fontSize: 14, whiteSpace: 'nowrap' }}>{filtered.length} parties</span>
         <button
-          onClick={() => downloadCsv(filtered)}
+          onClick={() => downloadCsv('directory.csv', CSV_COLUMNS, filtered)}
           style={{ padding: '8px 12px', border: '1px solid #ccc', borderRadius: 6, background: 'white', cursor: 'pointer' }}
         >
           ⬇ CSV

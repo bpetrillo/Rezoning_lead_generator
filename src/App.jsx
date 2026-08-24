@@ -6,9 +6,11 @@ import ProjectList from './components/ProjectList.jsx'
 import ProjectDetail from './components/ProjectDetail.jsx'
 import Directory from './components/Directory.jsx'
 import PartyDetail from './components/PartyDetail.jsx'
+import ProjectsTable from './components/ProjectsTable.jsx'
+import { parseAcreageNumber } from './lib/acreage.js'
 
 export default function App() {
-  const [view, setView] = useState('map') // 'map' | 'directory'
+  const [view, setView] = useState('map') // 'map' | 'table' | 'directory'
   const [projects, setProjects] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -56,7 +58,7 @@ export default function App() {
 
       if (!isMounted) return
       if (fetchError) setError(fetchError.message)
-      else setProjects(allRows)
+      else setProjects(allRows.map((p) => ({ ...p, acreageNumeric: parseAcreageNumber(p.acreage) })))
       setLoading(false)
     }
     load()
@@ -127,7 +129,7 @@ export default function App() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', fontFamily: 'system-ui, sans-serif' }}>
       <div style={{ display: 'flex', gap: 4, padding: '8px 16px 0', borderBottom: '1px solid #e2e2e2' }}>
-        {['map', 'directory'].map((v) => (
+        {['map', 'table', 'directory'].map((v) => (
           <button
             key={v}
             onClick={() => {
@@ -171,18 +173,28 @@ export default function App() {
             leadStatuses={leadStatuses}
             resultCount={filtered.length}
           />
-          <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
-            <div style={{ flex: 1.4, minWidth: 0 }}>
-              <MapView projects={filtered} selected={selected} onSelect={setSelected} />
-            </div>
-            <div style={{ width: 380, borderLeft: '1px solid #e2e2e2', overflowY: 'auto' }}>
-              {selected ? (
+          {view === 'table' ? (
+            selected ? (
+              <div style={{ flex: 1, overflowY: 'auto', maxWidth: 600 }}>
                 <ProjectDetail project={selected} onBack={() => setSelected(null)} onUpdate={handleProjectUpdate} />
-              ) : (
-                <ProjectList projects={filtered} loading={loading} error={error} onSelect={setSelected} />
-              )}
+              </div>
+            ) : (
+              <ProjectsTable projects={filtered} onSelectProject={setSelected} />
+            )
+          ) : (
+            <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
+              <div style={{ flex: 1.4, minWidth: 0 }}>
+                <MapView projects={filtered} selected={selected} onSelect={setSelected} />
+              </div>
+              <div style={{ width: 380, borderLeft: '1px solid #e2e2e2', overflowY: 'auto' }}>
+                {selected ? (
+                  <ProjectDetail project={selected} onBack={() => setSelected(null)} onUpdate={handleProjectUpdate} />
+                ) : (
+                  <ProjectList projects={filtered} loading={loading} error={error} onSelect={setSelected} />
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </>
       )}
     </div>
