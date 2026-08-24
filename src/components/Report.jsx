@@ -141,7 +141,7 @@ export default function Report({ projects, onSelectParty }) {
   const missingSizeCount = filtered.filter((p) => p.acreageNumeric == null).length
 
   return (
-    <div style={{ padding: 24, overflow: 'auto', height: '100%', boxSizing: 'border-box', maxWidth: 900 }}>
+    <div style={{ padding: 24, overflow: 'auto', height: '100%', boxSizing: 'border-box', maxWidth: 900, margin: '0 auto' }}>
       <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 4 }}>
         {filtered.length.toLocaleString()} Projects {activeFilter ? 'In Filtered View' : 'In View'}
       </div>

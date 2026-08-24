@@ -177,7 +177,7 @@ export default function App() {
           />
           {view === 'table' ? (
             selected ? (
-              <div style={{ flex: 1, overflowY: 'auto', maxWidth: 600 }}>
+              <div style={{ flex: 1, overflowY: 'auto', maxWidth: 600, margin: '0 auto', width: '100%' }}>
                 <ProjectDetail project={selected} onBack={() => setSelected(null)} onUpdate={handleProjectUpdate} />
               </div>
             ) : (
@@ -185,7 +185,7 @@ export default function App() {
             )
           ) : view === 'report' ? (
             selected ? (
-              <div style={{ flex: 1, overflowY: 'auto', maxWidth: 600 }}>
+              <div style={{ flex: 1, overflowY: 'auto', maxWidth: 600, margin: '0 auto', width: '100%' }}>
                 <ProjectDetail project={selected} onBack={() => setSelected(null)} onUpdate={handleProjectUpdate} />
               </div>
             ) : (
