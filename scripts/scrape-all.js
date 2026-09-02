@@ -34,6 +34,7 @@ const STEPS = [
   { label: 'Huntersville', script: 'scrapers/huntersville/index.js' },
   { label: 'Cornelius', script: 'scrapers/cornelius/index.js' },
   { label: 'Davidson', script: 'scrapers/davidson/index.js' },
+  { label: 'Concord', script: 'scrapers/concord/index.js' },
   { label: 'Owner enrichment', script: 'scripts/enrich-owner-info.js' },
   { label: 'Location/acreage enrichment', script: 'scripts/enrich-location-info.js' },
   { label: 'Excel export', script: 'scripts/export-to-excel.js' },

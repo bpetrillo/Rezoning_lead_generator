@@ -14,6 +14,7 @@
     "scrape:huntersville": "node scrapers/huntersville/index.js",
     "scrape:cornelius": "node scrapers/cornelius/index.js",
     "scrape:davidson": "node scrapers/davidson/index.js",
+    "scrape:concord": "node scrapers/concord/index.js",
     "export:excel": "node scripts/export-to-excel.js",
     "enrich:owners": "node scripts/enrich-owner-info.js",
     "enrich:location": "node scripts/enrich-location-info.js",
@@ -27,7 +28,8 @@
     "playwright": "^1.62.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-leaflet": "^4.2.1"
+    "react-leaflet": "^4.2.1",
+    "undici": "^8.10.1"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.1",
