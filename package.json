@@ -16,6 +16,7 @@
     "scrape:davidson": "node scrapers/davidson/index.js",
     "scrape:concord": "node scrapers/concord/index.js",
     "scrape:kannapolis": "node scrapers/kannapolis/index.js",
+    "scrape:harrisburg": "node scrapers/harrisburg/index.js",
     "export:excel": "node scripts/export-to-excel.js",
     "enrich:owners": "node scripts/enrich-owner-info.js",
     "enrich:location": "node scripts/enrich-location-info.js",
