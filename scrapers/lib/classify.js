@@ -23,6 +23,11 @@
  *
  * Returns null (not a guess) when nothing matches with reasonable confidence — an
  * uncategorized gray dot on the map is more honest than a wrong-colored one.
+ *
+ * UPDATED: added "daycare"/"day care" to Institutional/Public and "coffee" to
+ * Commercial — found via a real data-quality review of Waxhaw/Indian Trail data
+ * showing genuine daycares and coffee shops (e.g. "Ivy Kids Daycare", "7 Brew
+ * Coffee") incorrectly falling through to Uncategorized.
  */
 
 const TRADITIONAL_ZONING_PREFIXES = [
@@ -49,9 +54,9 @@ const UDO_ZONING_PREFIXES = [
 ]
 
 const KEYWORD_RULES = [
-  { pattern: /\bhospital|medical office|clinic|church|school|library|fire station|senior center|senior living\b/i, type: 'Institutional/Public' },
+  { pattern: /\bhospital|medical office|clinic|church|school|library|fire station|senior center|senior living|daycare|day care\b/i, type: 'Institutional/Public' },
   { pattern: /\btownhome|townhouse|apartment|single-family|single family|subdivision|residential|homes\b/i, type: 'Residential' },
-  { pattern: /\bretail|restaurant|hotel|office building|storage|bank|store|brewery|car wash|carwash|dealership\b/i, type: 'Commercial' },
+  { pattern: /\bretail|restaurant|hotel|office building|storage|bank|store|brewery|car wash|carwash|dealership|coffee\b/i, type: 'Commercial' },
   { pattern: /\bwarehouse|industrial|manufactur|distribution center|flex (space|park)\b/i, type: 'Industrial' },
   { pattern: /\bgreenway|roundabout|road (extension|connector|improvement)|water tower|utility|sewer\b/i, type: 'Infrastructure' },
   { pattern: /\bfarm\b(?!ers)|agricultural\b/i, type: 'Agricultural' },

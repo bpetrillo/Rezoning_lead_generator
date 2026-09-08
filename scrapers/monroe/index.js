@@ -31,6 +31,7 @@
 import { upsertProjects } from '../lib/upsert.js'
 import { geocodeRecords } from '../lib/geocode.js'
 import { classifyProjectType } from '../lib/classify.js'
+import { decodeHtmlEntities } from '../lib/html.js'
 
 const PROJECTS_PAGE_URL = 'https://www.monroenc.org/278/Development-Projects'
 const BASE_URL = 'https://www.monroenc.org'
@@ -59,11 +60,11 @@ async function fetchProjects() {
   let match
   while ((match = itemRegex.exec(html)) !== null) {
     const [, pageId, href, name, descriptionRaw] = match
-    const description = descriptionRaw.replace(/\s+/g, ' ').trim()
+    const description = decodeHtmlEntities(descriptionRaw).replace(/\s+/g, ' ').trim()
     projects.push({
       pageId,
       url: href.startsWith('http') ? href : `${BASE_URL}${href}`,
-      name: name.trim(),
+      name: decodeHtmlEntities(name).trim(),
       description,
     })
   }

@@ -28,6 +28,7 @@
 import { upsertProjects } from '../lib/upsert.js'
 import { geocodeRecords } from '../lib/geocode.js'
 import { classifyProjectType } from '../lib/classify.js'
+import { decodeHtmlEntities } from '../lib/html.js'
 
 const PAGE_URL = 'https://www.waxhaw.com/government/departments/planning/developer-projects-update'
 
@@ -35,7 +36,7 @@ function extractField(itemHtml, label) {
   const pattern = new RegExp(`<strong>${label}:?[^<]*<\\/strong>\\s*([\\s\\S]*?)<\\/p>`, 'i')
   const match = itemHtml.match(pattern)
   if (!match) return null
-  const text = match[1].replace(/&nbsp;/g, ' ').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim()
+  const text = decodeHtmlEntities(match[1].replace(/<[^>]+>/g, '')).replace(/\s+/g, ' ').trim()
   return text || null
 }
 
@@ -48,7 +49,7 @@ function extractCaseNumber(processText) {
 function extractCurrentStage(itemHtml) {
   const matches = [...itemHtml.matchAll(/<li><strong>([^<]+?)\s*-\s*CURRENT STAGE<\/strong><\/li>/gi)]
   if (matches.length === 0) return null
-  return matches[matches.length - 1][1].replace(/&nbsp;/g, ' ').trim()
+  return decodeHtmlEntities(matches[matches.length - 1][1]).trim()
 }
 
 function extractAcreage(text) {
@@ -97,8 +98,8 @@ function fetchCompletedProjects(html) {
   const projects = []
   let match
   while ((match = rowRegex.exec(section)) !== null) {
-    const name = match[1].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim()
-    const description = match[2].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim()
+    const name = decodeHtmlEntities(match[1].replace(/<[^>]+>/g, '')).replace(/\s+/g, ' ').trim()
+    const description = decodeHtmlEntities(match[2].replace(/<[^>]+>/g, '')).replace(/\s+/g, ' ').trim()
     if (!name || /project name/i.test(name)) continue
     projects.push({
       name,

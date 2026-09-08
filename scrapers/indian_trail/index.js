@@ -33,6 +33,7 @@
 import { upsertProjects } from '../lib/upsert.js'
 import { geocodeRecords } from '../lib/geocode.js'
 import { classifyProjectType } from '../lib/classify.js'
+import { decodeHtmlEntities } from '../lib/html.js'
 
 const PROJECTS_PAGE_URL = 'https://www.indiantrail.org/625/Development-Projects-in-Indian-Trail'
 const BASE_URL = 'https://www.indiantrail.org'
@@ -48,7 +49,7 @@ function getCellValue(rowHtml, columnName) {
   const pattern = new RegExp(`data-th="${columnName}"[^>]*>([\\s\\S]*?)<\\/td>`, 'i')
   const match = rowHtml.match(pattern)
   if (!match) return null
-  const text = match[1].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim()
+  const text = decodeHtmlEntities(match[1].replace(/<[^>]+>/g, '')).replace(/\s+/g, ' ').trim()
   return text || null
 }
 
