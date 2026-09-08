@@ -21,6 +21,7 @@
     "scrape:gastonia": "node scrapers/gastonia/index.js",
     "scrape:belmont": "node scrapers/belmont/index.js",
     "scrape:mount-holly": "node scrapers/mount_holly/index.js",
+    "scrape:monroe": "node scrapers/monroe/index.js",
     "export:excel": "node scripts/export-to-excel.js",
     "enrich:owners": "node scripts/enrich-owner-info.js",
     "enrich:location": "node scripts/enrich-location-info.js",
