@@ -19,6 +19,7 @@
     "scrape:harrisburg": "node scrapers/harrisburg/index.js",
     "scrape:mount-pleasant": "node scrapers/mount_pleasant/index.js",
     "scrape:gastonia": "node scrapers/gastonia/index.js",
+    "scrape:belmont": "node scrapers/belmont/index.js",
     "export:excel": "node scripts/export-to-excel.js",
     "enrich:owners": "node scripts/enrich-owner-info.js",
     "enrich:location": "node scripts/enrich-location-info.js",
