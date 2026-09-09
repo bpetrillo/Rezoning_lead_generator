@@ -25,6 +25,7 @@
     "scrape:indian-trail": "node scrapers/indian_trail/index.js",
     "scrape:waxhaw": "node scrapers/waxhaw/index.js",
     "scrape:rock-hill": "node scrapers/rock_hill/index.js",
+    "scrape:tega-cay": "node scrapers/tega_cay/index.js",
     "export:excel": "node scripts/export-to-excel.js",
     "enrich:owners": "node scripts/enrich-owner-info.js",
     "enrich:location": "node scripts/enrich-location-info.js",
