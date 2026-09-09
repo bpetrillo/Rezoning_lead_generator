@@ -61,7 +61,7 @@ async function findAgendaUrls() {
 function extractRezoningCases(rawText) {
   const normalized = rawText.replace(/\s+/g, ' ')
   const regex =
-    /petition\s+(M\s*-\s*\d{4}-\d+)\s+by\s+(.+?)\s+to\s+(?:annex and )?rezone\s+approximately\s+([\d.]+)\s+acres(?:\s+including\s+right-of-way)?\s+at\s+(.+?)\s+from\s+(.+?)\s+to\s+(.+?)\.\s*Tax\s+Parcel:?\s*([\d\-,\s&]+?)(?:\.|\s+This item|$)/gis
+    /petition\s+(M\s*-\s*\d{4}-\d+)\s+by\s+(.+?)\s+to\s+(?:annex and )?rezone\s+approximately\s+([\d.]+)\s+acres(?:\s+including\s+right-of-way)?\s+at\s+(.+?)\s+from\s+(.+?)\s+to\s+(.+?)\.\s*Tax\s+Parcels?:?\s*([\dA-Za-z\-,\s&/]+?)(?:\.|\s+This item|$)/gis
   const cases = []
   let match
   while ((match = regex.exec(normalized)) !== null) {
@@ -73,7 +73,7 @@ function extractRezoningCases(rawText) {
       address: match[4].trim(),
       currentZoning: match[5].trim(),
       proposedZoning: match[6].trim(),
-      taxParcel: match[7].replace(/\s+/g, '').trim(),
+      taxParcel: match[7].replace(/\s+/g, ' ').trim(),
       deferred: /deferred/i.test(windowAfter),
     })
   }
