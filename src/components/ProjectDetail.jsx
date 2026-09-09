@@ -28,23 +28,15 @@ function Row({ label, children }) {
 export default function ProjectDetail({ project: p, onBack, onUpdate }) {
   const color = getTypeColor(p.project_type)
 
-  // Local edit state for the two personal-tracking fields. Reset whenever the selected
-  // project actually changes (p.id) — this component doesn't always unmount between
-  // selections (e.g. clicking a different map marker while this panel is already open
-  // just updates props, it doesn't remount), so initializing state only once with
-  // useState's initial value would leave stale Contacted/Interested/etc. showing for
-  // the wrong project.
   const [leadStatus, setLeadStatus] = useState(p.lead_status || '')
   const [leadNotes, setLeadNotes] = useState(p.lead_notes || '')
-  // Editable contact fields — initialized to the manual override if one exists,
-  // otherwise to whatever was auto-extracted, so the input shows the effective value
-  // either way. Saving always writes to the manual_* columns, never contact_email/
-  // contact_phone directly — those get overwritten by scrapers on every re-run, which
-  // would silently erase a manual entry. See schema.sql for the full reasoning.
   const [contactEmail, setContactEmail] = useState(p.manual_contact_email || p.contact_email || '')
   const [contactPhone, setContactPhone] = useState(p.manual_contact_phone || p.contact_phone || '')
   const [address, setAddress] = useState(p.manual_address || p.address || '')
   const [saveState, setSaveState] = useState('idle') // 'idle' | 'saving' | 'saved' | 'error'
+  // Separate from saveState — geocoding is its own async step that happens after the
+  // address text itself is saved, and can succeed/fail independently of that save.
+  const [geocodeState, setGeocodeState] = useState('idle') // 'idle' | 'geocoding' | 'geocoded' | 'failed'
 
   useEffect(() => {
     setLeadStatus(p.lead_status || '')
@@ -53,6 +45,7 @@ export default function ProjectDetail({ project: p, onBack, onUpdate }) {
     setContactPhone(p.manual_contact_phone || p.contact_phone || '')
     setAddress(p.manual_address || p.address || '')
     setSaveState('idle')
+    setGeocodeState('idle')
   }, [p.id])
 
   async function saveField(fields) {
@@ -61,6 +54,7 @@ export default function ProjectDetail({ project: p, onBack, onUpdate }) {
     setSaveState(error ? 'error' : 'saved')
     if (error) console.error('Failed to save lead tracking field:', error.message)
     else onUpdate?.(p.id, fields)
+    return !error
   }
 
   function handleStatusChange(e) {
@@ -70,8 +64,6 @@ export default function ProjectDetail({ project: p, onBack, onUpdate }) {
   }
 
   function handleNotesBlur() {
-    // Saved on blur rather than on every keystroke — avoids a network request per
-    // character while typing.
     if (leadNotes !== (p.lead_notes || '')) {
       saveField({ lead_notes: leadNotes || null })
     }
@@ -91,17 +83,39 @@ export default function ProjectDetail({ project: p, onBack, onUpdate }) {
     }
   }
 
-  function handleAddressBlur() {
+  // Saves the address text as before, then re-geocodes it server-side (via
+  // /api/geocode-address — direct browser calls to the Census geocoder are blocked by
+  // CORS, confirmed live) so the map pin actually moves to match, instead of the text
+  // and the pin silently drifting out of sync. A failed geocode (vague address, no
+  // match) leaves the existing coordinates untouched rather than clearing them — a bad
+  // new address shouldn't blow away a previously-working pin.
+  async function handleAddressBlur() {
     const effectiveCurrent = p.manual_address || p.address || ''
-    if (address !== effectiveCurrent) {
-      saveField({ manual_address: address || null })
+    if (address === effectiveCurrent) return
+
+    const saved = await saveField({ manual_address: address || null })
+    if (!saved || !address) return
+
+    setGeocodeState('geocoding')
+    try {
+      const res = await fetch('/api/geocode-address', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ projectId: p.id, address }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setGeocodeState('geocoded')
+        onUpdate?.(p.id, { latitude: data.latitude, longitude: data.longitude })
+      } else {
+        setGeocodeState('failed')
+      }
+    } catch (err) {
+      console.error('Geocoding request failed:', err)
+      setGeocodeState('failed')
     }
   }
 
-  // Boardwalk shows a headline summary like "4.94-Acre Residential Rezoning by True
-  // Homes" — built here from whatever real fields we actually have (acreage,
-  // project_type, request_type, applicant), skipping any piece that's missing rather
-  // than fabricating a fake-sounding sentence.
   const headlineParts = []
   if (p.acreage) headlineParts.push(`${p.acreage}-Acre`)
   if (p.project_type) headlineParts.push(p.project_type)
@@ -238,8 +252,11 @@ export default function ProjectDetail({ project: p, onBack, onUpdate }) {
           </label>
           <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>
             {saveState === 'saving' && 'Saving...'}
-            {saveState === 'saved' && 'Saved'}
+            {saveState === 'saved' && geocodeState === 'idle' && 'Saved'}
             {saveState === 'error' && 'Failed to save — try again'}
+            {geocodeState === 'geocoding' && 'Updating map pin...'}
+            {geocodeState === 'geocoded' && 'Saved · map pin updated'}
+            {geocodeState === 'failed' && "Saved · couldn't find that address on the map"}
           </span>
         </div>
         <input
@@ -255,10 +272,10 @@ export default function ProjectDetail({ project: p, onBack, onUpdate }) {
         <div style={{ borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
           <MiniMap project={p} />
         </div>
-        {p.manual_address && (
+        {geocodeState === 'failed' && (
           <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 8 }}>
-            Note: editing the address text doesn't move the pin above — that's based on
-            stored coordinates, not this text.
+            Couldn't find that exact address on the map — the pin above hasn't moved.
+            Try adding more detail (street number, city) and it'll retry automatically.
           </div>
         )}
       </Section>
