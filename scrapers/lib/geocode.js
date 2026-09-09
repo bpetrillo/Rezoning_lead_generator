@@ -13,6 +13,8 @@
  * here. Geocoding Mint Hill is still a TODO for that reason.
  */
 
+import { getStateForMunicipality } from './state.js'
+
 const GEOCODER_URL = 'https://geocoding.geo.census.gov/geocoder/locations/onelineaddress'
 
 /**
@@ -48,8 +50,13 @@ export async function geocodeAddress(address) {
  * Some scrapers' addresses are street-only with no city (e.g. Matthews: "9520 E
  * Independence Blvd", Cornelius: "20401 Zion Ave") while others already include it
  * (Davidson: "121-129 North Main Street, Davidson, NC 28036"). Street-only addresses
- * risk matching a similarly-named street in the wrong NC town, so municipality + ", NC"
+ * risk matching a similarly-named street in the wrong town, so municipality + state
  * gets appended when it's not already present in the string.
+ *
+ * FIXED: this used to hardcode ", NC" unconditionally — confirmed live as a real bug
+ * once Rock Hill (the first South Carolina town) was added, since it meant Rock Hill's
+ * street-only addresses were being geocoded with the wrong state. Now looks up the
+ * correct state per municipality via state.js.
  */
 export async function geocodeRecords(records, { delayMs = 200 } = {}) {
   let geocoded = 0
@@ -62,9 +69,10 @@ export async function geocodeRecords(records, { delayMs = 200 } = {}) {
     }
     const hasMunicipality =
       record.municipality && record.address.toLowerCase().includes(record.municipality.toLowerCase())
+    const state = getStateForMunicipality(record.municipality)
     const query = hasMunicipality || !record.municipality
       ? record.address
-      : `${record.address}, ${record.municipality}, NC`
+      : `${record.address}, ${record.municipality}, ${state}`
 
     const { latitude, longitude } = await geocodeAddress(query)
     record.latitude = latitude

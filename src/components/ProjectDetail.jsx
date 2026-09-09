@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { getTypeColor, getTypeLabel } from '../lib/typeColors.js'
 import { LEAD_STATUSES } from '../lib/leadStatus.js'
 import { supabase } from '../lib/supabaseClient.js'
+import { getStateForMunicipality } from '../lib/state.js'
 import MiniMap from './MiniMap.jsx'
 
 function Section({ title, children }) {
@@ -268,7 +269,9 @@ export default function ProjectDetail({ project: p, onBack, onUpdate }) {
           placeholder="Add an address..."
           style={{ width: '100%', marginBottom: 10 }}
         />
-        <div style={{ marginBottom: 10, color: 'var(--text)' }}>{p.municipality}, NC</div>
+        <div style={{ marginBottom: 10, color: 'var(--text)' }}>
+          {p.municipality}, {getStateForMunicipality(p.municipality)}
+        </div>
         <div style={{ borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
           <MiniMap project={p} />
         </div>
