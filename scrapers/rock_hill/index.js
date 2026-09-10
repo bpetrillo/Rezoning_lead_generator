@@ -1,36 +1,55 @@
 /**
- * City of Rock Hill, SC — Planning Commission rezoning petition scraper. York County,
- * SC — first town in this state and county for this project.
+ * City of Rock Hill, SC — Planning Commission "New Business Items" scraper. York
+ * County, SC.
+ *
+ * REWRITTEN from an earlier version that extracted "Public Hearing Items" (rezoning
+ * petitions, "M-" case numbers) — switched entirely to "New Business Items" (site
+ * plan / preliminary plat approvals, "Plan #" numbers) at explicit request: the
+ * rezoning-petition names were unreadable ("M-2026-09 — 620 Briarcliff Rd."), while
+ * New Business items have real, human-readable project names ("Winthrop Residence
+ * Hall Phase I", "Cherry Road Mini Storage", "AMC Theater Redevelopment Expansion").
  *
  * Like Mount Pleasant and Mount Holly, Rock Hill has no structured webpage or database
  * of cases — only monthly Planning Commission agenda PDFs (68 historical entries
- * confirmed live, going back well over a year). Scoped here to just the agendas
- * listed on the first page of the Agendas & Minutes listing (recent, actually-
- * published ones — several future-dated entries show "Not Included" since no PDF
- * exists yet) rather than paginating through the full historical archive.
+ * confirmed live). Scoped here to just the agendas listed on the first page of the
+ * Agendas & Minutes listing (recent, actually-published ones) rather than paginating
+ * through the full historical archive.
  *
- * KEY DISCOVERY, verified against a real uploaded agenda (August 4, 2026): real
- * rezoning petitions consistently follow the pattern "petition M-YYYY-NN by
- * [Applicant] ([Org]) to [annex and ]rezone approximately X acres [including
- * right-of-way] at [ADDRESS] from [CURRENT ZONING] to [PROPOSED ZONING]. Tax Parcel:
- * XXX-XX-XX-XXX." — and critically, the "M-" case-number prefix reliably marks a
- * real rezoning petition, distinguishing it from "T-" (text/ordinance amendments,
- * not property-specific) — same pattern already proven for Mount Holly's "R-" vs
- * "TA-" prefixes.
+ * VALIDATED against 8 real uploaded agendas spanning January through September 2026
+ * (15 real items total, every one extracting correctly) — a much broader test than
+ * the single August agenda the first version was built against, and it surfaced
+ * several genuine format variations that first version would have silently mishandled
+ * or dropped:
  *
- * Confirmed live bug caught and fixed during testing: the PDF's real extracted text
- * has a stray space after the hyphen in case numbers ("M- 2026-08" instead of
- * "M-2026-08"), a line-wrap artifact — missing this caused one of the two real cases
- * in the test PDF to be silently skipped. Fixed by allowing optional whitespace
- * around the hyphen in the case-number pattern.
+ *   1. Plan number format varies: "(Plan #20240992)" in most months, but June 2026
+ *      uses "(#20230917)" — no "Plan" word at all. "Plan" is now optional.
+ *   2. Sentence word order varies: most items are "Consideration of a request BY
+ *      Applicant (Contact) FOR ApprovalType for ProjectName..." but Feb 3 2026's
+ *      Costco item is "Consideration of a request FOR Road Name Approval BY Nestor
+ *      Hernandez (Thomas & Hutton Engineering) for..." — applicant and approval type
+ *      swapped. Both orders are now matched (two passes, deduped by plan number).
+ *   3. Address introducer varies: usually "at ADDRESS", sometimes "near ADDRESS" or
+ *      "located near ADDRESS" (Rock Hill Costco Depot, Lee Street Townhomes). Some
+ *      items have NO introducer word at all before a numbered street address (Timber
+ *      Lane subdivision "...for Timber Lane subdivision 172 Timber Lane.") — handled
+ *      with a fallback that splits on the transition to a number-led address when no
+ *      "at"/"near" marker is found.
+ *   4. Some items have no address, no tax parcel, AND no contact person at all (the
+ *      City of Rock Hill's right-of-way creation request) — every field here is
+ *      genuinely optional, not just occasionally missing.
+ *   5. Not every New Business item is a real project at all — some months include
+ *      calendar approvals, meeting-date changes, or "Continuing education
+ *      opportunities" with no Plan # — these correctly produce no match rather than
+ *      false data, since the extraction regex requires a real "(Plan #N)" or "(#N)".
+ *   6. Some months' New Business section is genuinely empty ("a. None.") — detected
+ *      and correctly returns zero items rather than erroring.
  *
  * HONEST LIMITATIONS:
- *   - Status reflects whether the item was scheduled and whether it was explicitly
- *     marked "deferred by the applicant" in that agenda — not a final approval/denial
- *     outcome, since these agendas are forward-looking hearing schedules, not results.
- *   - "New Business" site-plan/plat items (a separate section using "Plan #" numbers)
- *     are NOT included — scope is limited to actual rezoning petitions ("M-" cases)
- *     to stay consistent with the rest of this project.
+ *   - Status reflects whether the item was scheduled for a given meeting — not a
+ *     final approval/denial outcome, since these agendas are forward-looking meeting
+ *     schedules, not results.
+ *   - Some items genuinely have no address or tax parcel at all (e.g. right-of-way
+ *     creation requests) — left null rather than guessed.
  */
 
 import { upsertProjects } from '../lib/upsert.js'
@@ -50,34 +69,110 @@ async function findAgendaUrls() {
   if (!res.ok) throw new Error(`Agendas page fetch failed: ${res.status}`)
   const html = await res.text()
 
-  // Tolerant of both single and double quotes around the href attribute — confirmed
-  // live this page uses single quotes (href='...'), not the double quotes assumed
-  // originally.
   const matches = [...html.matchAll(/href=['"](\/home\/showpublisheddocument\/\d+\/\d+)['"][^>]*>[^<]*Planning Commission Agenda/gi)]
   const urls = matches.map((m) => `${BASE_URL}${m[1]}`)
   return [...new Set(urls)]
 }
 
-function extractRezoningCases(rawText) {
-  const normalized = rawText.replace(/\s+/g, ' ')
-  const regex =
-    /petition\s+(M\s*-\s*\d{4}-\d+)\s+by\s+(.+?)\s+to\s+(?:annex and )?rezone\s+approximately\s+([\d.]+)\s+acres(?:\s+including\s+right-of-way)?\s+at\s+(.+?)\s+from\s+(.+?)\s+to\s+(.+?)\.\s*Tax\s+Parcels?:?\s*([\dA-Za-z\-,\s&/]+?)(?:\.|\s+This item|$)/gis
-  const cases = []
-  let match
-  while ((match = regex.exec(normalized)) !== null) {
-    const windowAfter = normalized.slice(match.index, match.index + 500)
-    cases.push({
-      caseNumber: match[1].replace(/\s+/g, ''),
-      applicant: match[2].trim(),
-      acreage: match[3],
-      address: match[4].trim(),
-      currentZoning: match[5].trim(),
-      proposedZoning: match[6].trim(),
-      taxParcel: match[7].replace(/\s+/g, ' ').trim(),
-      deferred: /deferred/i.test(windowAfter),
-    })
+/** Builds the full item record from a regex match. `hasApplicantFirst` distinguishes
+ * the two real sentence-order variants confirmed live (see file header, point 2). */
+function extractOneItem(match, hasApplicantFirst) {
+  let byPart, rest, planNumber
+  if (hasApplicantFirst) {
+    byPart = match[1].trim()
+    rest = match[2].trim()
+    planNumber = match[3]
+  } else {
+    const approvalTypeRaw = match[1].trim()
+    byPart = match[2].trim()
+    rest = `${approvalTypeRaw} for ${match[3].trim()}`
+    planNumber = match[4]
   }
-  return cases
+
+  const contactMatch = byPart.match(/^(.+?)\s*\(([^)]+)\)$/)
+  const applicant = contactMatch ? contactMatch[1].trim() : byPart
+  const contact = contactMatch ? contactMatch[2].trim() : null
+
+  let taxParcel = null
+  const taxMatch = rest.match(/\.\s*Tax\s+Parcels?:?\s*([\dA-Za-z\-,\s&/]+?)\.?\s*$/i)
+  if (taxMatch) {
+    // Confirmed live: a line-wrap can leave a stray space after "&-" in a parcel range
+    // (e.g. "&- 161" instead of "&-161") — cleaned up here.
+    taxParcel = taxMatch[1].trim().replace(/&-\s+/g, '&-')
+    rest = rest.slice(0, taxMatch.index).trim()
+  } else {
+    rest = rest.replace(/\.$/, '').trim()
+  }
+
+  const approvalType = rest.match(/^(.+?)\s+for\s+/i)?.[1]?.trim() || null
+  const afterApprovalType = rest.match(/^.+?\s+for\s+(.+)$/is)?.[1]?.trim() || rest
+
+  let projectName, address
+  const markerMatch = afterApprovalType.match(/^(.+?)\s+(?:located\s+)?(?:at|near)\s+(.+)$/is)
+  if (markerMatch) {
+    projectName = markerMatch[1].trim()
+    address = markerMatch[2].trim()
+  } else {
+    // Confirmed live (Timber Lane subdivision): some items have no "at"/"near"
+    // introducer at all before a numbered street address — fall back to splitting on
+    // the transition to a number-led, capitalized address.
+    const fallbackMatch = afterApprovalType.match(/^(.+?)\s+(\d+\s+[A-Z].*)$/)
+    if (fallbackMatch) {
+      projectName = fallbackMatch[1].trim()
+      address = fallbackMatch[2].trim()
+    } else {
+      projectName = afterApprovalType
+      address = null
+    }
+  }
+  projectName = projectName.replace(/^the\s+/i, '')
+
+  return { applicant, contact, projectName, address, taxParcel, planNumber, approvalType }
+}
+
+/** Extracts real New Business items from an agenda's full text. Verified against 15
+ * real items across 8 real uploaded agendas (Jan–Sep 2026). */
+function extractNewBusinessItems(rawText) {
+  const normalized = rawText.replace(/\s+/g, ' ')
+
+  const startMatch = normalized.match(/New Business Items\**/i)
+  if (!startMatch) return []
+  const sectionStart = startMatch.index + startMatch[0].length
+  const endMatch = normalized.slice(sectionStart).match(/(?:\d+\.\s*Other Business|\d+\.\s*Adjourn)/i)
+  const sectionEnd = endMatch ? sectionStart + endMatch.index : normalized.length
+  const section = normalized.slice(sectionStart, sectionEnd)
+
+  if (/^\s*None\.?\s*$/i.test(section.trim())) return [] // confirmed live: some months have no New Business items at all
+
+  // "Plan" is optional in the plan-number marker — confirmed live June 2026 uses
+  // "(#20230917)" with no "Plan" word at all, unlike every other month.
+  const planNumPattern = '\\(\\s*(?:Plan\\s*)?#\\s*(\\d+)\\)'
+  const items = []
+  const seenPlanNumbers = new Set()
+
+  // Pattern A (the common case): "Consideration of a request BY Applicant for Rest..."
+  const regexA = new RegExp(`Consideration of a request by (.+?)\\s+for\\s+(.+?)\\s*${planNumPattern}`, 'gis')
+  let match
+  while ((match = regexA.exec(section)) !== null) {
+    const item = extractOneItem(match, true)
+    if (!seenPlanNumbers.has(item.planNumber)) {
+      seenPlanNumbers.add(item.planNumber)
+      items.push(item)
+    }
+  }
+
+  // Pattern B (confirmed live, Feb 2026 Costco item): "Consideration of a request FOR
+  // ApprovalType BY Applicant for ProjectName..." — applicant and approval type swapped.
+  const regexB = new RegExp(`Consideration of a request for (.+?)\\s+by\\s+(.+?)\\s+for\\s+(.+?)\\s*${planNumPattern}`, 'gis')
+  while ((match = regexB.exec(section)) !== null) {
+    const item = extractOneItem(match, false)
+    if (!seenPlanNumbers.has(item.planNumber)) {
+      seenPlanNumbers.add(item.planNumber)
+      items.push(item)
+    }
+  }
+
+  return items
 }
 
 const MONTH_NAMES = [
@@ -106,34 +201,34 @@ async function fetchAgendaRecords(url) {
   const data = await pdfParse(buffer)
 
   const meetingDate = extractMeetingDate(data.text)
-  const cases = extractRezoningCases(data.text)
+  const items = extractNewBusinessItems(data.text)
 
-  return cases.map((c) => ({
-    name: `${c.caseNumber} — ${c.address}`,
+  return items.map((it) => ({
+    name: it.projectName,
     source: 'rock_hill',
-    source_id: c.caseNumber,
+    source_id: it.planNumber,
     source_url: url,
     municipality: 'Rock Hill',
-    address: c.address,
+    address: it.address,
     manual_address: null,
-    parcel_id: c.taxParcel,
+    parcel_id: it.taxParcel,
     latitude: null,
     longitude: null,
-    project_type: classifyProjectType({ description: `${c.currentZoning} to ${c.proposedZoning}` }),
-    request_type: 'Rezoning',
-    current_zoning: c.currentZoning,
-    zoning: c.proposedZoning,
-    acreage: c.acreage,
-    applicant: c.applicant,
-    developer: null,
+    project_type: classifyProjectType({ description: `${it.projectName} ${it.approvalType || ''}` }),
+    request_type: it.approvalType,
+    current_zoning: null,
+    zoning: null,
+    acreage: null,
+    applicant: it.applicant,
+    developer: it.contact,
     owner: null,
     owner_mailing_address: null,
     contact_email: null,
     contact_phone: null,
     manual_contact_email: null,
     manual_contact_phone: null,
-    status: c.deferred ? 'Deferred by applicant' : meetingDate ? `Scheduled for hearing on ${meetingDate}` : 'Scheduled for hearing',
-    description: `Rezone ${c.acreage} acres at ${c.address} from ${c.currentZoning} to ${c.proposedZoning}.`,
+    status: meetingDate ? `Scheduled for hearing on ${meetingDate}` : 'Scheduled for hearing',
+    description: `${it.approvalType || 'Request'} for ${it.projectName}${it.address ? ` at ${it.address}` : ''}, requested by ${it.applicant}${it.contact ? ` (${it.contact})` : ''}.`,
     last_action_date: meetingDate,
     hearing_date: meetingDate,
   }))
@@ -150,7 +245,7 @@ async function main() {
     await new Promise((r) => setTimeout(r, 200))
   }
 
-  console.log(`Parsed ${allRecords.length} Rock Hill rezoning petitions across all agendas.`)
+  console.log(`Parsed ${allRecords.length} Rock Hill New Business items across all agendas.`)
   if (allRecords.length === 0) {
     console.log('No records to upsert.')
     return
