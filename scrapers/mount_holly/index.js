@@ -22,14 +22,23 @@
  * has "Case R-26-4" (no #). The extraction regex makes the # optional throughout to
  * handle both.
  *
+ * ADDED: many real cases genuinely have NO street address at all in the agenda text —
+ * confirmed live, "Call for a public hearing to consider rezoning Parcel # 123202 from
+ * R-8-MF to R-8-SF. Case # R-26-3." has nothing but a bare parcel number. Rather than
+ * relying on text-based geocoding for these (which has nothing to work with), this now
+ * looks up each case's first parcel number directly in Gaston County's own public GIS
+ * parcel service — confirmed live this resolves a bare parcel number like "123202" to
+ * a real street address ("101 E NIMS AVE") with exact latitude/longitude already
+ * included, no geocoding needed at all. Falls back to the original site-name/text
+ * geocoding only when the GIS lookup doesn't return a match.
+ *
  * HONEST LIMITATIONS:
  *   - These are hearings SCHEDULED for a given Planning Commission meeting — not a
  *     confirmation of approval/denial. Status reflects "scheduled for hearing on
  *     [date]", not a final outcome, since these agendas don't report back results.
  *   - No acreage field exists in this format at all — left null.
- *   - "address" is really a "site name" the agenda item happens to include (e.g. "1714
- *     North Main Street Mixed Use Site") when present — not present for every case
- *     (confirmed live: July's single-parcel case had no site name at all).
+ *   - The GIS parcel lookup uses only the FIRST parcel number for cases spanning
+ *     multiple parcels — a representative point, not a boundary of the whole site.
  */
 
 import { upsertProjects } from '../lib/upsert.js'
@@ -42,11 +51,37 @@ const pdfParse = require('pdf-parse')
 
 const PLANNING_COMMISSION_PAGE =
   'https://www.mtholly.us/government/boards_and_commissions/planning_commission__board_of_adjustments.php'
+const GASTON_PARCELS_QUERY_URL =
+  'https://gis.gastoncountync.gov/publicgis/rest/services/PublicGIS/Parcels/MapServer/11/query'
 
 const MONTH_NAMES = [
   'JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE',
   'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER',
 ]
+
+/** Looks up a Gaston County parcel by its PID (the plain numeric parcel number used
+ * in Mount Holly's agendas, e.g. "123202") via the county's public GIS service.
+ * Returns { address, latitude, longitude } or null if no match. Never throws — a
+ * lookup miss shouldn't take down an entire scraper run. */
+async function lookupParcelLocation(pid) {
+  if (!pid) return null
+  try {
+    const params = new URLSearchParams({
+      where: `PID='${pid}'`,
+      outFields: 'WHOLE_ADDRESS,Latitude,Longitude',
+      f: 'json',
+    })
+    const res = await fetch(`${GASTON_PARCELS_QUERY_URL}?${params}`)
+    if (!res.ok) return null
+    const data = await res.json()
+    const attrs = data.features?.[0]?.attributes
+    if (!attrs || attrs.Latitude == null || attrs.Longitude == null) return null
+    return { address: attrs.WHOLE_ADDRESS || null, latitude: attrs.Latitude, longitude: attrs.Longitude }
+  } catch (err) {
+    console.warn(`  Gaston County parcel lookup failed for PID ${pid}: ${err.message}`)
+    return null
+  }
+}
 
 async function findAgendaUrls() {
   const res = await fetch(PLANNING_COMMISSION_PAGE)
@@ -121,10 +156,20 @@ async function fetchAgendaRecords(url) {
   const meetingDate = extractMeetingDate(data.text)
   const items = extractRezoningItems(data.text)
 
-  return items
-    .map((itemText) => {
+  return Promise.all(
+    items.map(async (itemText) => {
       const parsed = parseRezoningItem(itemText)
       if (!parsed.caseNumber) return null
+
+      const parcelLocation = await lookupParcelLocation(parsed.parcelIds[0])
+      // Confirmed live: siteName is often just a descriptive project label ("Holly
+      // Heights Townhome Development"), not a real address — using it unconditionally
+      // as the address field meant genuinely resolvable cases (via the parcel lookup)
+      // were getting overridden by unusable text. The GIS-derived address always wins
+      // when available; siteName is only used as a fallback address when it actually
+      // looks like a real street address (starts with a number).
+      const siteNameLooksLikeAddress = parsed.siteName && /^\d/.test(parsed.siteName)
+      const address = parcelLocation?.address || (siteNameLooksLikeAddress ? parsed.siteName : null)
 
       return {
         name: parsed.siteName || `${parsed.caseNumber} (${parsed.parcelIds.join(', ') || 'parcel TBD'})`,
@@ -132,11 +177,11 @@ async function fetchAgendaRecords(url) {
         source_id: parsed.caseNumber,
         source_url: url,
         municipality: 'Mount Holly',
-        address: parsed.siteName,
+        address,
         manual_address: null,
         parcel_id: parsed.parcelIds.join(', ') || null,
-        latitude: null,
-        longitude: null,
+        latitude: parcelLocation?.latitude ?? null,
+        longitude: parcelLocation?.longitude ?? null,
         project_type: classifyProjectType({ description: itemText }),
         request_type: 'Rezoning',
         current_zoning: parsed.currentZoning,
@@ -156,7 +201,7 @@ async function fetchAgendaRecords(url) {
         hearing_date: meetingDate,
       }
     })
-    .filter(Boolean)
+  ).then((records) => records.filter(Boolean))
 }
 
 async function main() {
