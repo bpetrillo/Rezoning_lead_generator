@@ -28,6 +28,7 @@
     "scrape:tega-cay": "node scrapers/tega_cay/index.js",
     "scrape:york": "node scrapers/york_sc/index.js",
     "scrape:lincoln-county": "node scrapers/lincoln_county/index.js",
+    "scrape:weddington": "node scrapers/weddington/index.js",
     "export:excel": "node scripts/export-to-excel.js",
     "enrich:owners": "node scripts/enrich-owner-info.js",
     "enrich:location": "node scripts/enrich-location-info.js",
