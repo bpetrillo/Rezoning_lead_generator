@@ -1,122 +1,149 @@
 /**
- * Town of Pineville — "Planning Projects, Meetings, and Events" scraper.
+ * Town of Pineville, NC — Planning Projects bulletin scraper. Mecklenburg County.
  *
- * THIN VERSION BY DESIGN. Verified live on 2026-08-13 against:
- *   https://www.pinevillenc.gov/planningmeetingsprojectsevents/
+ * REWRITTEN: the original version of this scraper had a real structural bug that
+ * produced badly broken data — confirmed live, records like "Miller Farm Traffic
+ * Study Miller Farm proposed concept drawing Miller Farm Rezoning plan set Single
+ * family elevations Townhome elevations" were actually SEVERAL separate document
+ * links for ONE real project ("Miller Farm subdivision") incorrectly treated as
+ * multiple separate projects, because the original version extracted every `<a>` tag
+ * as its own record instead of respecting paragraph boundaries.
  *
- * Unlike Charlotte, Mint Hill, and Matthews, Pineville does not publish a structured
- * case list at all. This page is a manually-maintained bulletin organized into category
- * headings (h4), each followed by one <p> per project — plain prose with zero or more
- * links to PDFs. No case ID, no parcel number, no zoning code, no applicant name, no
- * formal date/status fields exist anywhere on this page.
+ * CONFIRMED LIVE via direct DOM/HTML inspection: the page (pinevillenc.gov/
+ * planningmeetingsprojectsevents) is structured as `<h4>CATEGORY:</h4>` headings
+ * (PROPOSED RESIDENTIAL DEVELOPMENT, NEW RESIDENTIAL DEVELOPMENT, NEW COMMERCIAL
+ * DEVELOPMENT, ROAD and SIDEWALK PROJECTS, GENERAL INTEREST), each followed by a run
+ * of `<p>` tags — and each `<p>` IS one real project, even when it contains multiple
+ * `<a>` links to different supporting documents (rezoning plan, traffic study, site
+ * elevations, etc.) separated by `<br>` inside the same paragraph. This version
+ * correctly treats one `<p>` as one project record.
  *
- * I also checked Pineville's Town Council meeting agendas (hosted on Municode) as a
- * richer alternative — those DO have "Conditional Zoning Request" items with attached
- * application/staff-report PDFs, but:
- *   (a) Municode's meeting list requires login — there's no public API to auto-discover
- *       new meeting URLs, only ones already indexed by search engines, so a scraper
- *       can't reliably find new meetings on its own, and
- *   (b) getting real structured fields out of those would mean parsing prose PDF text
- *       (staff reports), which is inherently lower-confidence than the labeled fields
- *       the other three towns' web pages provide directly.
- * Given that, this scraper intentionally stays thin rather than producing unreliable
- * structured data. What it captures: project name, category, and document links. It
- * does NOT set address, parcel_id, zoning, applicant, or dates — those are genuinely not
- * available here without the PDF-parsing effort described above.
+ * ADDRESS EXTRACTION: many entries genuinely embed a real street address directly in
+ * their text (e.g. "9540 Rodney. New Euroline Warehouse...", "Aspen Dental 8336
+ * Pineville-Matthews RD"), in inconsistent positions (leading or trailing) with no
+ * consistent delimiter — handled with a heuristic regex (a number followed by 1-3
+ * capitalized words, stopping at a sentence boundary) rather than a fixed pattern,
+ * with a blocklist to reject common false positives like "166 Townhomes" (a unit
+ * count, not an address).
  *
- * Categories seen on the live page (confirmed): "PROPOSED RESIDENTIAL DEVELOPMENT",
- * "NEW RESIDENTIAL DEVELOPMENT", "NEW COMMERCIAL DEVELOPMENT", "ROAD and SIDEWALK
- * PROJECTS", "Older Plans (ongoing construction)", "GENERAL INTEREST". Mapped to the
- * schema's project_type where a reasonable mapping exists; left null otherwise.
+ * HONEST LIMITATIONS:
+ *   - Address extraction is a genuine heuristic against free-text bulletin prose,
+ *     not a structured field — expect real misses and occasional false positives on
+ *     entries with unusual phrasing.
+ *   - Includes a "GENERAL INTEREST" section that may contain non-project
+ *     announcements alongside real projects — same honest tradeoff as including any
+ *     other town's administrative agenda items.
+ *   - No case/petition number exists in this data — source_id is built from the
+ *     project name plus its position, stable as long as the town doesn't reorder
+ *     the bulletin.
  */
 
 import { upsertProjects } from '../lib/upsert.js'
-import * as cheerio from 'cheerio'
+import { geocodeRecords } from '../lib/geocode.js'
+import { classifyProjectType } from '../lib/classify.js'
+import { decodeHtmlEntities } from '../lib/html.js'
 
 const PAGE_URL = 'https://www.pinevillenc.gov/planningmeetingsprojectsevents/'
 
-const CATEGORY_TO_PROJECT_TYPE = {
-  'PROPOSED RESIDENTIAL DEVELOPMENT': 'Residential',
-  'NEW RESIDENTIAL DEVELOPMENT': 'Residential',
-  'NEW COMMERCIAL DEVELOPMENT': 'Commercial',
-  'ROAD AND SIDEWALK PROJECTS': 'Infrastructure',
+function extractEmbeddedAddress(text) {
+  if (/\bP\.?O\.?\s*Box\b/i.test(text)) return null // confirmed live: PO Box numbers aren't street addresses
+  const match = text.match(/\b(\d{2,6}\s+[A-Z][a-zA-Z.-]*(?:\s+[A-Z][a-zA-Z.-]*){0,2})(?=[.,(]|\s+\d|\s+(?:in|for|and)\b|$)/)
+  if (!match) return null
+  const candidate = match[1].trim()
+  if (/^\d+\s+(Townhomes?|Homes?|Units?|Single|Lots?)$/i.test(candidate)) return null
+  // Confirmed live: "Flood insurance Hazard Mitigation report 2022 Recertification"
+  // matched "2022 Recertification" as a fake address — a 4-digit number that looks
+  // like a plausible year is almost certainly a year reference, not a street number.
+  const leadingNumber = candidate.match(/^\d+/)[0]
+  if (leadingNumber.length === 4 && Number(leadingNumber) >= 1900 && Number(leadingNumber) <= 2099) return null
+  return candidate
 }
 
-/** Turns free text into a short, stable, URL-safe id for upsert de-duping. */
-function slugify(text) {
-  return text
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 60)
+function paragraphText(pHtml) {
+  const withBreaks = pHtml.replace(/<br\s*\/?>/gi, ' ')
+  return decodeHtmlEntities(withBreaks.replace(/<[^>]+>/g, '')).replace(/\s+/g, ' ').trim()
 }
 
-async function fetchAndParse() {
+function extractProjectName(pHtml, fallbackText) {
+  const strongMatch = pHtml.match(/<strong>([\s\S]*?)<\/strong>/i)
+  if (strongMatch) return decodeHtmlEntities(strongMatch[1].replace(/<[^>]+>/g, '')).trim()
+  const linkMatch = pHtml.match(/<a[^>]*>([\s\S]*?)<\/a>/i)
+  if (linkMatch) return decodeHtmlEntities(linkMatch[1].replace(/<[^>]+>/g, '')).trim()
+  const firstLine = fallbackText.split(/\s{2,}|\n/)[0]
+  return firstLine || fallbackText
+}
+
+async function fetchProjects() {
   const res = await fetch(PAGE_URL)
-  if (!res.ok) throw new Error(`Fetch failed: ${res.status} ${res.statusText}`)
+  if (!res.ok) throw new Error(`Page fetch failed: ${res.status}`)
   const html = await res.text()
-  const $ = cheerio.load(html)
 
-  const root = $('.entry-content-wrapper')
-  const records = []
-  let currentCategory = null
+  const headingMatches = [...html.matchAll(/<h4[^>]*>([\s\S]*?)<\/h4>/gi)].map((m) => ({
+    label: decodeHtmlEntities(m[1].replace(/<[^>]+>/g, '')).replace(/:$/, '').trim(),
+    index: m.index,
+    endIndex: m.index + m[0].length,
+  }))
 
-  root.find('h2, h4, p').each((_, el) => {
-    const tag = el.tagName.toLowerCase()
-    if (tag === 'h2' || tag === 'h4') {
-      const text = $(el).text().replace(/:$/, '').trim()
-      if (text) currentCategory = text
-      return
+  const projects = []
+  let projectIndex = 0
+  for (let i = 0; i < headingMatches.length; i++) {
+    const { label, endIndex } = headingMatches[i]
+    if (!label) continue
+    const sectionEnd = i + 1 < headingMatches.length ? headingMatches[i + 1].index : html.length
+    const sectionHtml = html.slice(endIndex, sectionEnd)
+
+    const pMatches = [...sectionHtml.matchAll(/<p[^>]*>([\s\S]*?)<\/p>/gi)]
+    for (const pMatch of pMatches) {
+      const pHtml = pMatch[1]
+      const fullText = paragraphText(pHtml)
+      if (!fullText) continue
+      const name = extractProjectName(pHtml, fullText)
+      if (!name) continue
+      const address = extractEmbeddedAddress(fullText)
+
+      projects.push({ name, description: fullText, address, category: label, projectIndex })
+      projectIndex++
     }
-    // tag === 'p'
-    const text = $(el).text().replace(/\s+/g, ' ').trim()
-    if (!text) return
-
-    const links = $(el)
-      .find('a')
-      .map((_, a) => {
-        const href = $(a).attr('href')
-        return href ? (href.startsWith('http') ? href : new URL(href, PAGE_URL).toString()) : null
-      })
-      .get()
-      .filter(Boolean)
-
-    const categoryKey = (currentCategory || '').toUpperCase()
-
-    records.push({
-      name: text.slice(0, 200),
-      source: 'pineville',
-      source_id: slugify(`${currentCategory || 'uncategorized'}-${text}`),
-      source_url: links[0] || PAGE_URL,
-      municipality: 'Pineville',
-      address: null, // not available — see file header
-      parcel_id: null, // not available
-      latitude: null,
-      longitude: null,
-      project_type: CATEGORY_TO_PROJECT_TYPE[categoryKey] || null,
-      request_type: null, // often not actually a rezoning — could be a subdivision
-      // proposal, road project, etc. Left null rather than mislabeling everything
-      // "Rezoning" like the other towns' scrapers do.
-      current_zoning: null,
-      zoning: null,
-      acreage: null, // not available on this bulletin page
-      applicant: null,
-      developer: null,
-      owner: null,
-      status: null, // status is sometimes embedded in the prose (e.g. "APPROVED") but
-      // not reliably extractable — left null rather than guessed
-      description: text,
-      last_action_date: null,
-      hearing_date: null,
-    })
-  })
-
-  return records
+  }
+  return projects
 }
 
 async function main() {
-  const records = await fetchAndParse()
-  console.log(`Parsed ${records.length} Pineville planning items (thin — no structured fields).`)
+  const projects = await fetchProjects()
+  console.log(`Found ${projects.length} Pineville planning bulletin entries.`)
+
+  const records = projects.map((p) => ({
+    name: p.name,
+    source: 'pineville',
+    source_id: `${p.name}-${p.projectIndex}`,
+    source_url: PAGE_URL,
+    municipality: 'Pineville',
+    address: p.address,
+    manual_address: null,
+    parcel_id: null,
+    latitude: null,
+    longitude: null,
+    project_type: classifyProjectType({ description: p.description }),
+    request_type: null,
+    current_zoning: null,
+    zoning: null,
+    acreage: null,
+    applicant: null,
+    developer: null,
+    owner: null,
+    owner_mailing_address: null,
+    contact_email: null,
+    contact_phone: null,
+    manual_contact_email: null,
+    manual_contact_phone: null,
+    status: p.category,
+    description: p.description,
+    last_action_date: null,
+    hearing_date: null,
+  }))
+
+  console.log(`Parsed ${records.length} Pineville records.`)
+  await geocodeRecords(records)
   await upsertProjects(records)
 }
 
