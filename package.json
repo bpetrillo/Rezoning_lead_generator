@@ -30,6 +30,7 @@
     "scrape:lincoln-county": "node scrapers/lincoln_county/index.js",
     "scrape:weddington": "node scrapers/weddington/index.js",
     "scrape:marvin": "node scrapers/marvin/index.js",
+    "scrape:salisbury": "node scrapers/salisbury/index.js",
     "export:excel": "node scripts/export-to-excel.js",
     "enrich:owners": "node scripts/enrich-owner-info.js",
     "enrich:location": "node scripts/enrich-location-info.js",
