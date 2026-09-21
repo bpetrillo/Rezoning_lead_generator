@@ -4,7 +4,7 @@ on:
   schedule:
     # Runs daily at 8am UTC (~3-4am Eastern). Adjust as needed.
     - cron: '0 8 * * *'
-  workflow_dispatch: {} # lets you trigger it manually from the Actions tab
+  workflow_dispatch: {} # lets you trigger it manually from the Actions tab, or via the app's Refresh button
 
 # Needed so the "commit backup" step below can push the exported Excel file back to
 # the repo using the workflow's built-in token. IMPORTANT: this repo setting
@@ -23,8 +23,10 @@ jobs:
         with:
           node-version: 20
       - run: npm install
-      - name: Install Playwright browser (for Matthews scraper)
+      - name: Install Playwright browser (for Matthews and York SC scrapers)
         run: npx playwright install --with-deps chromium
+
+      # --- Mecklenburg County ---
       - name: Charlotte
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -60,6 +62,109 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: node scrapers/matthews/index.js
+
+      # --- Cabarrus County ---
+      - name: Concord
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scrapers/concord/index.js
+      - name: Kannapolis
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scrapers/kannapolis/index.js
+      - name: Harrisburg
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scrapers/harrisburg/index.js
+      - name: Mount Pleasant
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scrapers/mount_pleasant/index.js
+
+      # --- Gaston County ---
+      - name: Gastonia
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scrapers/gastonia/index.js
+      - name: Belmont
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scrapers/belmont/index.js
+      - name: Mount Holly
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scrapers/mount_holly/index.js
+
+      # --- Union County ---
+      - name: Monroe
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scrapers/monroe/index.js
+      - name: Indian Trail
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scrapers/indian_trail/index.js
+      - name: Waxhaw
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scrapers/waxhaw/index.js
+      - name: Weddington
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scrapers/weddington/index.js
+      - name: Marvin
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scrapers/marvin/index.js
+
+      # --- York County, SC ---
+      - name: Rock Hill
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scrapers/rock_hill/index.js
+      - name: Tega Cay
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scrapers/tega_cay/index.js
+      - name: York SC
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scrapers/york_sc/index.js
+
+      # --- Lincoln County, NC ---
+      - name: Lincoln County
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scrapers/lincoln_county/index.js
+
+      # --- Rowan County, NC ---
+      - name: Salisbury
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scrapers/salisbury/index.js
+      - name: Rowan County
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scrapers/rowan_county/index.js
+
       - name: Export full dataset to Excel backup
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}

@@ -16,6 +16,11 @@ export default function App() {
   const [projects, setProjects] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  // 'idle' | 'starting' | 'started' | 'error' — tracks the "Refresh Data" button, which
+  // triggers the GitHub Actions workflow (all 25 town scrapers) via api/trigger-scrape.js
+  // rather than scraping directly here. The actual new data doesn't appear until that
+  // workflow finishes, several minutes later — this only confirms the run STARTED.
+  const [refreshStatus, setRefreshStatus] = useState('idle')
   const [selected, setSelected] = useState(null)
   const [selectedParty, setSelectedParty] = useState(null) // name of party being viewed in Directory
   const [filters, setFilters] = useState({
@@ -135,6 +140,26 @@ export default function App() {
     setSelectedParty(null)
   }
 
+  // Starts the GitHub Actions scrape workflow (all 25 towns) via the serverless
+  // trigger-scrape endpoint. Fire-and-forget from here — the workflow runs on GitHub's
+  // side over several minutes, not synchronously, so this only confirms it started.
+  async function handleRefreshData() {
+    setRefreshStatus('starting')
+    try {
+      const res = await fetch('/api/trigger-scrape', { method: 'POST' })
+      const data = await res.json()
+      if (res.ok) {
+        setRefreshStatus('started')
+      } else {
+        console.error('Refresh failed to start:', data.error)
+        setRefreshStatus('error')
+      }
+    } catch (err) {
+      console.error('Refresh failed to start:', err)
+      setRefreshStatus('error')
+    }
+  }
+
   return (
     <div className="app-shell">
       <div className="app-nav">
@@ -150,6 +175,21 @@ export default function App() {
             {v}
           </button>
         ))}
+        <button
+          onClick={handleRefreshData}
+          disabled={refreshStatus === 'starting'}
+          className="app-nav-tab"
+          style={{ marginLeft: 'auto' }}
+          title="Runs all 25 town scrapers on GitHub Actions — takes several minutes, this button just starts it"
+        >
+          {refreshStatus === 'starting'
+            ? 'Starting…'
+            : refreshStatus === 'started'
+              ? 'Refresh started ✓'
+              : refreshStatus === 'error'
+                ? 'Refresh failed — retry?'
+                : 'Refresh Data'}
+        </button>
       </div>
 
       {view === 'directory' ? (
