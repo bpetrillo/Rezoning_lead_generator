@@ -16,6 +16,17 @@
  * finished. Confirmed live: 18 real completed projects, included with status
  * "Completed" and no address (none is given for this section).
  *
+ * BOT PROTECTION: confirmed live this site returns a 403 specifically when fetched
+ * from GitHub Actions' servers — even with realistic browser headers added (which DID
+ * fix a similar block for Belmont), the exact same 403 persisted, confirmed
+ * identically on two separate real GitHub Actions runs. This means the block is
+ * IP/infrastructure-based rather than a simple missing-header check, so it now uses
+ * Playwright (a real browser session) instead of plain fetch — the same escalation
+ * already proven necessary for York SC's Cloudflare challenge. HONEST UNCERTAINTY:
+ * if this site's block is ALSO purely IP-based (not about looking like a real
+ * browser), Playwright running from the same GitHub Actions IP range may not help
+ * either — this needs a real live test to confirm either way.
+ *
  * HONEST LIMITATIONS:
  *   - Completed projects have no address, applicant, or case number — only a name
  *     and description, since that's genuinely all this section provides.
@@ -29,20 +40,9 @@ import { upsertProjects } from '../lib/upsert.js'
 import { geocodeRecords } from '../lib/geocode.js'
 import { classifyProjectType } from '../lib/classify.js'
 import { decodeHtmlEntities } from '../lib/html.js'
+import { chromium } from 'playwright'
 
 const PAGE_URL = 'https://www.waxhaw.com/government/departments/planning/developer-projects-update'
-
-// Confirmed live: a plain fetch (Node's default minimal headers) gets a 403
-// specifically when run from GitHub Actions' servers — the same code works fine from
-// a regular machine, so this is IP/traffic-pattern-based bot blocking rather than a
-// missing-header issue in the usual sense. Realistic browser headers are the standard
-// first fix for this (same pattern already proven for Belmont).
-const BROWSER_HEADERS = {
-  'User-Agent':
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-  Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-  'Accept-Language': 'en-US,en;q=0.9',
-}
 
 function extractField(itemHtml, label) {
   const pattern = new RegExp(`<strong>${label}:?[^<]*<\\/strong>\\s*([\\s\\S]*?)<\\/p>`, 'i')
@@ -126,10 +126,22 @@ function fetchCompletedProjects(html) {
   return projects
 }
 
+async function fetchPageHtml() {
+  const browser = await chromium.launch()
+  try {
+    const page = await browser.newPage({
+      userAgent:
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+    })
+    await page.goto(PAGE_URL, { waitUntil: 'networkidle', timeout: 30000 })
+    return await page.content()
+  } finally {
+    await browser.close()
+  }
+}
+
 async function main() {
-  const res = await fetch(PAGE_URL, { headers: BROWSER_HEADERS })
-  if (!res.ok) throw new Error(`Page fetch failed: ${res.status}`)
-  const html = await res.text()
+  const html = await fetchPageHtml()
 
   const activeProjects = await fetchActiveProjects(html)
   const completedProjects = fetchCompletedProjects(html)

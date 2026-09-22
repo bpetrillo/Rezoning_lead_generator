@@ -44,6 +44,17 @@
  *   6. Some months' New Business section is genuinely empty ("a. None.") — detected
  *      and correctly returns zero items rather than erroring.
  *
+ * BOT PROTECTION: confirmed live this site returns a 403 specifically when fetched
+ * from GitHub Actions' servers — even with realistic browser headers added (which DID
+ * fix a similar block for Belmont), the exact same 403 persisted on two separate real
+ * GitHub Actions runs. This means the block is IP/infrastructure-based rather than a
+ * simple missing-header check, so this now uses Playwright's request context (a real
+ * browser session's network stack, without needing to actually render pages) instead
+ * of plain fetch — the same escalation already proven necessary for York SC's
+ * Cloudflare challenge. HONEST UNCERTAINTY: if this site's block is ALSO purely
+ * IP-based (not about how the request looks), this may not help either — needs a real
+ * live test to confirm either way.
+ *
  * HONEST LIMITATIONS:
  *   - Status reflects whether the item was scheduled for a given meeting — not a
  *     final approval/denial outcome, since these agendas are forward-looking meeting
@@ -56,6 +67,7 @@ import { upsertProjects } from '../lib/upsert.js'
 import { geocodeRecords } from '../lib/geocode.js'
 import { classifyProjectType } from '../lib/classify.js'
 import { createRequire } from 'module'
+import { chromium } from 'playwright'
 
 const require = createRequire(import.meta.url)
 const pdfParse = require('pdf-parse')
@@ -64,20 +76,9 @@ const AGENDAS_PAGE_URL =
   'https://www.cityofrockhill.com/government/boards-commissions/boards-commissions-agendas-minutes/planning-commission-agendas-minutes'
 const BASE_URL = 'https://www.cityofrockhill.com'
 
-// Confirmed live: a plain fetch gets a 403 specifically when run from GitHub Actions'
-// servers (the same code works fine from a regular machine) — IP/traffic-pattern-based
-// bot blocking, not a missing-header issue in the usual sense. Realistic browser
-// headers are the standard first fix (same pattern already proven for Belmont/Waxhaw).
-const BROWSER_HEADERS = {
-  'User-Agent':
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-  Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-  'Accept-Language': 'en-US,en;q=0.9',
-}
-
-async function findAgendaUrls() {
-  const res = await fetch(AGENDAS_PAGE_URL, { headers: BROWSER_HEADERS })
-  if (!res.ok) throw new Error(`Agendas page fetch failed: ${res.status}`)
+async function findAgendaUrls(requestContext) {
+  const res = await requestContext.get(AGENDAS_PAGE_URL)
+  if (!res.ok()) throw new Error(`Agendas page fetch failed: ${res.status()}`)
   const html = await res.text()
 
   const matches = [...html.matchAll(/href=['"](\/home\/showpublisheddocument\/\d+\/\d+)['"][^>]*>[^<]*Planning Commission Agenda/gi)]
@@ -202,13 +203,13 @@ function extractMeetingDate(text) {
   return `${match[3]}-${month}-${day}`
 }
 
-async function fetchAgendaRecords(url) {
-  const res = await fetch(url, { headers: BROWSER_HEADERS })
-  if (!res.ok) {
-    console.warn(`  agenda fetch failed (${res.status}): ${url}`)
+async function fetchAgendaRecords(requestContext, url) {
+  const res = await requestContext.get(url)
+  if (!res.ok()) {
+    console.warn(`  agenda fetch failed (${res.status()}): ${url}`)
     return []
   }
-  const buffer = Buffer.from(await res.arrayBuffer())
+  const buffer = await res.body()
   const data = await pdfParse(buffer)
 
   const meetingDate = extractMeetingDate(data.text)
@@ -246,24 +247,35 @@ async function fetchAgendaRecords(url) {
 }
 
 async function main() {
-  const agendaUrls = await findAgendaUrls()
-  console.log(`Found ${agendaUrls.length} Rock Hill Planning Commission agendas.`)
+  const browser = await chromium.launch()
+  try {
+    const context = await browser.newContext({
+      userAgent:
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+    })
+    const requestContext = context.request
 
-  const allRecords = []
-  for (const url of agendaUrls) {
-    const records = await fetchAgendaRecords(url)
-    allRecords.push(...records)
-    await new Promise((r) => setTimeout(r, 200))
+    const agendaUrls = await findAgendaUrls(requestContext)
+    console.log(`Found ${agendaUrls.length} Rock Hill Planning Commission agendas.`)
+
+    const allRecords = []
+    for (const url of agendaUrls) {
+      const records = await fetchAgendaRecords(requestContext, url)
+      allRecords.push(...records)
+      await new Promise((r) => setTimeout(r, 200))
+    }
+
+    console.log(`Parsed ${allRecords.length} Rock Hill New Business items across all agendas.`)
+    if (allRecords.length === 0) {
+      console.log('No records to upsert.')
+      return
+    }
+
+    await geocodeRecords(allRecords)
+    await upsertProjects(allRecords)
+  } finally {
+    await browser.close()
   }
-
-  console.log(`Parsed ${allRecords.length} Rock Hill New Business items across all agendas.`)
-  if (allRecords.length === 0) {
-    console.log('No records to upsert.')
-    return
-  }
-
-  await geocodeRecords(allRecords)
-  await upsertProjects(allRecords)
 }
 
 main().catch((err) => {
