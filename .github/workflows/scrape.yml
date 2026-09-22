@@ -29,7 +29,12 @@ jobs:
       # --- Mecklenburg County ---
       - name: Charlotte
         continue-on-error: true
-        timeout-minutes: 5
+        # Confirmed live: Charlotte legitimately needs more than 5 minutes — it
+        # processes hundreds of petitions across multiple years (e.g. "found 265
+        # petitions" just for 2021 alone) and completed successfully in ~45 minutes
+        # when given enough time. Every other scraper keeps the tighter 5-minute
+        # timeout below; only this one needs the extra headroom.
+        timeout-minutes: 60
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

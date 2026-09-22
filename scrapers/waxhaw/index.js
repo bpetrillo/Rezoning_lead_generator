@@ -32,6 +32,18 @@ import { decodeHtmlEntities } from '../lib/html.js'
 
 const PAGE_URL = 'https://www.waxhaw.com/government/departments/planning/developer-projects-update'
 
+// Confirmed live: a plain fetch (Node's default minimal headers) gets a 403
+// specifically when run from GitHub Actions' servers — the same code works fine from
+// a regular machine, so this is IP/traffic-pattern-based bot blocking rather than a
+// missing-header issue in the usual sense. Realistic browser headers are the standard
+// first fix for this (same pattern already proven for Belmont).
+const BROWSER_HEADERS = {
+  'User-Agent':
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+  Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+  'Accept-Language': 'en-US,en;q=0.9',
+}
+
 function extractField(itemHtml, label) {
   const pattern = new RegExp(`<strong>${label}:?[^<]*<\\/strong>\\s*([\\s\\S]*?)<\\/p>`, 'i')
   const match = itemHtml.match(pattern)
@@ -115,7 +127,7 @@ function fetchCompletedProjects(html) {
 }
 
 async function main() {
-  const res = await fetch(PAGE_URL)
+  const res = await fetch(PAGE_URL, { headers: BROWSER_HEADERS })
   if (!res.ok) throw new Error(`Page fetch failed: ${res.status}`)
   const html = await res.text()
 

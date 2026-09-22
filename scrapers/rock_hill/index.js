@@ -64,8 +64,19 @@ const AGENDAS_PAGE_URL =
   'https://www.cityofrockhill.com/government/boards-commissions/boards-commissions-agendas-minutes/planning-commission-agendas-minutes'
 const BASE_URL = 'https://www.cityofrockhill.com'
 
+// Confirmed live: a plain fetch gets a 403 specifically when run from GitHub Actions'
+// servers (the same code works fine from a regular machine) — IP/traffic-pattern-based
+// bot blocking, not a missing-header issue in the usual sense. Realistic browser
+// headers are the standard first fix (same pattern already proven for Belmont/Waxhaw).
+const BROWSER_HEADERS = {
+  'User-Agent':
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+  Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+  'Accept-Language': 'en-US,en;q=0.9',
+}
+
 async function findAgendaUrls() {
-  const res = await fetch(AGENDAS_PAGE_URL)
+  const res = await fetch(AGENDAS_PAGE_URL, { headers: BROWSER_HEADERS })
   if (!res.ok) throw new Error(`Agendas page fetch failed: ${res.status}`)
   const html = await res.text()
 
@@ -191,8 +202,7 @@ function extractMeetingDate(text) {
   return `${match[3]}-${month}-${day}`
 }
 
-async function fetchAgendaRecords(url) {
-  const res = await fetch(url)
+  const res = await fetch(url, { headers: BROWSER_HEADERS })
   if (!res.ok) {
     console.warn(`  agenda fetch failed (${res.status}): ${url}`)
     return []
