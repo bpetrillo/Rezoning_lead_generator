@@ -202,6 +202,7 @@ function extractMeetingDate(text) {
   return `${match[3]}-${month}-${day}`
 }
 
+async function fetchAgendaRecords(url) {
   const res = await fetch(url, { headers: BROWSER_HEADERS })
   if (!res.ok) {
     console.warn(`  agenda fetch failed (${res.status}): ${url}`)
