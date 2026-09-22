@@ -132,9 +132,24 @@ async function fetchPageHtml() {
     const page = await browser.newPage({
       userAgent:
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+      viewport: { width: 1280, height: 800 },
+      locale: 'en-US',
+      timezoneId: 'America/New_York',
     })
-    await page.goto(PAGE_URL, { waitUntil: 'networkidle', timeout: 30000 })
-    return await page.content()
+    await page.goto(PAGE_URL, { waitUntil: 'domcontentloaded', timeout: 30000 })
+    // Confirmed live: waiting for networkidle alone wasn't enough — the real accordion
+    // content is confirmed present under normal browsing conditions, so explicitly
+    // wait for it to actually appear rather than trusting a generic network-idle
+    // signal, which may fire before this specific content renders (or before a
+    // soft bot-check finishes deciding what to serve).
+    try {
+      await page.waitForSelector('.accordion-item', { timeout: 15000 })
+    } catch {
+      console.warn('  .accordion-item never appeared within 15s — page may be getting a stripped/bot-check response.')
+    }
+    const html = await page.content()
+    console.log(`  fetched page: ${html.length} chars, ${(html.match(/accordion-item/g) || []).length} accordion-item mentions`)
+    return html
   } finally {
     await browser.close()
   }

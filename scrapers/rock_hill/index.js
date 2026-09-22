@@ -45,15 +45,17 @@
  *      and correctly returns zero items rather than erroring.
  *
  * BOT PROTECTION: confirmed live this site returns a 403 specifically when fetched
- * from GitHub Actions' servers — even with realistic browser headers added (which DID
- * fix a similar block for Belmont), the exact same 403 persisted on two separate real
- * GitHub Actions runs. This means the block is IP/infrastructure-based rather than a
- * simple missing-header check, so this now uses Playwright's request context (a real
- * browser session's network stack, without needing to actually render pages) instead
- * of plain fetch — the same escalation already proven necessary for York SC's
- * Cloudflare challenge. HONEST UNCERTAINTY: if this site's block is ALSO purely
- * IP-based (not about how the request looks), this may not help either — needs a real
- * live test to confirm either way.
+ * from GitHub Actions' servers — even with realistic browser headers (which DID fix a
+ * similar block for Belmont) and even with Playwright's lighter-weight request
+ * context (which DID work for Waxhaw's own listing page), the exact same 403
+ * persisted. This means a full real-browser page navigation is needed, not just an
+ * enhanced HTTP client — confirmed live this site's block responds to how "real" the
+ * navigation looks, not just headers. PDF fetching specifically uses Playwright's
+ * download-event pattern (waitForEvent('download') raced against page.goto()) since
+ * a real browser navigating directly to a PDF URL typically triggers a download
+ * rather than rendering it as a page. HONEST UNCERTAINTY: this is now the strongest
+ * escalation tried — if it still doesn't work, the remaining option is a paid
+ * proxy/relay service to route requests through a non-datacenter IP.
  *
  * HONEST LIMITATIONS:
  *   - Status reflects whether the item was scheduled for a given meeting — not a
@@ -76,10 +78,9 @@ const AGENDAS_PAGE_URL =
   'https://www.cityofrockhill.com/government/boards-commissions/boards-commissions-agendas-minutes/planning-commission-agendas-minutes'
 const BASE_URL = 'https://www.cityofrockhill.com'
 
-async function findAgendaUrls(requestContext) {
-  const res = await requestContext.get(AGENDAS_PAGE_URL)
-  if (!res.ok()) throw new Error(`Agendas page fetch failed: ${res.status()}`)
-  const html = await res.text()
+async function findAgendaUrls(page) {
+  await page.goto(AGENDAS_PAGE_URL, { waitUntil: 'domcontentloaded', timeout: 30000 })
+  const html = await page.content()
 
   const matches = [...html.matchAll(/href=['"](\/home\/showpublisheddocument\/\d+\/\d+)['"][^>]*>[^<]*Planning Commission Agenda/gi)]
   const urls = matches.map((m) => `${BASE_URL}${m[1]}`)
@@ -203,13 +204,25 @@ function extractMeetingDate(text) {
   return `${match[3]}-${month}-${day}`
 }
 
-async function fetchAgendaRecords(requestContext, url) {
-  const res = await requestContext.get(url)
-  if (!res.ok()) {
-    console.warn(`  agenda fetch failed (${res.status()}): ${url}`)
+async function fetchAgendaRecords(page, url) {
+  let buffer
+  try {
+    // Confirmed pattern: navigating a real browser directly to a PDF URL typically
+    // triggers a download rather than loading it as a normal page — page.goto()
+    // itself may reject/abort in that case, so it's raced against the download event
+    // rather than awaited directly.
+    const [download] = await Promise.all([
+      page.waitForEvent('download', { timeout: 30000 }),
+      page.goto(url, { timeout: 30000 }).catch(() => {}),
+    ])
+    const path = await download.path()
+    const fs = await import('fs')
+    buffer = fs.readFileSync(path)
+  } catch (err) {
+    console.warn(`  agenda fetch failed for ${url}: ${err.message}`)
     return []
   }
-  const buffer = await res.body()
+
   const data = await pdfParse(buffer)
 
   const meetingDate = extractMeetingDate(data.text)
@@ -252,15 +265,19 @@ async function main() {
     const context = await browser.newContext({
       userAgent:
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+      viewport: { width: 1280, height: 800 },
+      locale: 'en-US',
+      timezoneId: 'America/New_York',
+      acceptDownloads: true,
     })
-    const requestContext = context.request
+    const page = await context.newPage()
 
-    const agendaUrls = await findAgendaUrls(requestContext)
+    const agendaUrls = await findAgendaUrls(page)
     console.log(`Found ${agendaUrls.length} Rock Hill Planning Commission agendas.`)
 
     const allRecords = []
     for (const url of agendaUrls) {
-      const records = await fetchAgendaRecords(requestContext, url)
+      const records = await fetchAgendaRecords(page, url)
       allRecords.push(...records)
       await new Promise((r) => setTimeout(r, 200))
     }
